@@ -18,7 +18,6 @@ import java.util.Vector;
 import android.content.Context;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
-import android.os.Handler;
 import android.util.Log;
 
 /**
@@ -29,33 +28,23 @@ public class StreamingMediaPlayer {
 
     private int INTIAL_KB_BUFFER ;
     private int BIT = 8 ;
-    private int SECONDS = 20 ;
+    private int SECONDS = 30 ;
 
 	private int totalKbRead = 0;
 	
-	// Create Handler to call View updates on the main UI thread.
-	private final Handler handler = new Handler();
-	private MediaPlayer 	mediaPlayer;
 	private File downloadingMediaFile ; 
 	private String DOWNFILE = "downloadingMediaFile";
-	//private File bufferedFile ;
-	private boolean isInterrupted;
+
 	private Context context;
 	private int counter = 0;
 	private int playedcounter = 0;
 	private Vector<MediaPlayer> mediaplayers = new Vector<MediaPlayer>(3);
 	private boolean started = false; 
-	private MediaPlayer mp1 = new MediaPlayer();
-	private MediaPlayer mp2 = new MediaPlayer();
-	
+
  	public StreamingMediaPlayer(Context c) 
  	{
  		context = c;
-		//this.textStreamed = textStreamed;
-		//this.playButton = playButton;
-		//this.progressBar = progressBar;
  		downloadingMediaFile = new File(context.getCacheDir(),DOWNFILE + counter);
- 		//bufferedFile = new File(context.getCacheDir(),"playingMedia" + ".dat");
 	}
 	
     /**  
@@ -87,7 +76,7 @@ public class StreamingMediaPlayer {
      */  
     public void downloadAudioIncrement(String mediaUrl) throws IOException {
     	final String TAG = "downloadAudioIncrement";
-    	//URLConnection cn = new URL("http://www.webeclubbin.com/randomfiles/Testimony.mp3").openConnection();
+
     	URLConnection cn = new URL(mediaUrl).openConnection(); 
         cn.connect();   
         InputStream stream = cn.getInputStream();
@@ -95,7 +84,6 @@ public class StreamingMediaPlayer {
         	Log.e(TAG, "Unable to create InputStream for mediaUrl: " + mediaUrl);
         }
         
-		//downloadingMediaFile = new File(context.getCacheDir(),"downloadingMedia_" + (counter++) + ".dat");
 		Log.i(TAG, "File name: " + downloadingMediaFile);
 		BufferedOutputStream bout = new BufferedOutputStream ( new FileOutputStream(downloadingMediaFile), 32 * 1024 );   
         byte buf[] = new byte[16 * 1024];
@@ -105,7 +93,6 @@ public class StreamingMediaPlayer {
         	if (bout == null) {
         		counter++;
         		Log.i(TAG, "FileOutputStream is null, Create new one: " + DOWNFILE + counter);
-        		//break;
         		downloadingMediaFile = new File(context.getCacheDir(),DOWNFILE + counter);
         		bout = new BufferedOutputStream ( new FileOutputStream(downloadingMediaFile) );	
         	}
@@ -116,7 +103,7 @@ public class StreamingMediaPlayer {
                 break;   
             	
             } else {
-            	Log.v(TAG, "write to file");
+            	//Log.v(TAG, "write to file");
                 bout.write(buf, 0, numread);
 
                 totalBytesRead += numread;
@@ -128,92 +115,21 @@ public class StreamingMediaPlayer {
             
             if ( totalKbRead >= INTIAL_KB_BUFFER && ! stop) {
             	Log.v(TAG, "Reached Buffer amount we want: " + "totalKbRead: " + totalKbRead + " INTIAL_KB_BUFFER: " + INTIAL_KB_BUFFER);
-            	/*bout.flush();
+            	bout.flush();
             	bout.close();
             	            	
             	bout = null;
             	
-            	setupplayer(downloadingMediaFile);*/
+            	setupplayer(downloadingMediaFile);
             	totalBytesRead = 0;
-            	//INTIAL_KB_BUFFER = 1000000;
-            	
-            	if (mp1.isPlaying()){
-            		FileInputStream ins = new FileInputStream( downloadingMediaFile.getAbsolutePath());
-            		mp2.setDataSource(ins.getFD());
-            		mp2.setAudioStreamType(AudioManager.STREAM_MUSIC);
-        		
-            		Log.i(TAG, "while downloading: Prepare Media Player 2");
-            		try {
-            			mp2.prepare();
-            			//mp1.start();
-            			stop = true;
-            		} catch (IllegalStateException e) {
-            			Log.e(TAG, e.toString() );
-            		} catch (IOException e) {
-            			e.printStackTrace();
-            			Log.e(TAG, e.toString() );
-            		} catch (Exception e){
-            			e.printStackTrace();
-            			Log.e(TAG, e.toString());
-            		}
-            	} else {
-            		FileInputStream ins = new FileInputStream( downloadingMediaFile.getAbsolutePath());
-            		mp1.setDataSource(ins.getFD());
-            		mp1.setAudioStreamType(AudioManager.STREAM_MUSIC);
-        		
-            		Log.i(TAG, "while downloading: Prepare Media Player 1"  );
-            		try {
-            			mp1.prepare();
-            			mp1.start();
-            			
-            		} catch (IllegalStateException e) {
-            			Log.e(TAG, e.toString() );
-            		} catch (IOException e) {
-            			e.printStackTrace();
-            			Log.e(TAG, e.toString() );
-            		} catch (Exception e){
-            			e.printStackTrace();
-            			Log.e(TAG, e.toString());
-            		}
-            	}
-        		
-            	
+
             }
-            testtimeleft();
-           	//fireDataLoadUpdate();
+            
         } while (true);   
 
        	stream.close();
-        /*if (validateNotInterrupted()) {
-	       	fireDataFullyLoaded();
-        }*/
+
     }  
-
-    private void testtimeleft() {
-    	if (mp1.isPlaying()){
-    		if ( mp1.getDuration() - mp1.getCurrentPosition() < 500 ) {
-    			Log.v("testtimeleft", "play second player");
-    			int current = mp1.getCurrentPosition();
-    			mp1.stop();
-    			mp2.start();
-    			mp2.seekTo(current);
-    			mp1.release();
-    		}
-    	}
-    }
-    
-    private boolean validateNotInterrupted() {
-		if (isInterrupted) {
-			if (mediaPlayer != null) {
-				mediaPlayer.pause();
-				//mediaPlayer.release();
-			}
-			return false;
-		} else {
-			return true;
-		}
-    }
-
     
     /**
      * Test whether we need to transfer buffered data to the MediaPlayer.
@@ -231,6 +147,7 @@ public class StreamingMediaPlayer {
 	        		
 	        		MediaPlayer.OnCompletionListener listener = new MediaPlayer.OnCompletionListener () {
 	        			public void onCompletion(MediaPlayer mp){
+	        				String TAG = "MediaPlayer.OnCompletionListener";
 	        				/*Runnable r = new Runnable() {   
 	        			        public void run() {
 	        			        	String TAG = "MediaPlayer.OnCompletionListener";
@@ -245,8 +162,14 @@ public class StreamingMediaPlayer {
 	        			        }
 	        				};
 	        			    new Thread(r).start();*/
+	        				Log.i(TAG, "Current size of mediaplayer list: " + mediaplayers.size() );
+	        				while (mediaplayers.size() <= 1){
+    			        		Log.v(TAG, "waiting for another mediaplayer");
+    			        	}
 	        				MediaPlayer mp2 = mediaplayers.get(1);
     			        	mp2.start();
+    			        	Log.i(TAG, "Start new player");
+    			        	
 	        				mp.release();
 	        				mediaplayers.remove(mp);
 	        				removefile();
@@ -282,7 +205,7 @@ public class StreamingMediaPlayer {
  	        }
 	    };
 	    new Thread(r).start();
-	   ///handler.post(updater);
+
     }
    
     //Removed file from cache
@@ -293,6 +216,8 @@ public class StreamingMediaPlayer {
     	temp.delete();
     	playedcounter++;
     }
+    
+    //Start first audio clip
     private void startMediaPlayer() {
     	String TAG = "startMediaPlayer";
     	
@@ -303,100 +228,7 @@ public class StreamingMediaPlayer {
     	mp.start();  
     	
     }
-    
-    /**
-     * Transfer buffered data to the MediaPlayer.
-     * Interacting with MediaPlayer on non-main UI thread can causes crashes to so perform this using a Handler.
-     */  
-    private void transferBufferToMediaPlayer() {
-	    try {
-	    	Log.v(getClass().getName(), "transferBufferToMediaPlayer");
-	    	// First determine if we need to restart the player after transferring data...e.g. perhaps the user pressed pause
-	    	boolean wasPlaying = mediaPlayer.isPlaying();
-	    	int curPosition = mediaPlayer.getCurrentPosition();
-	    	mediaPlayer.pause();
 
-        	File bufferedFile = new File(context.getCacheDir(),"playingMedia" + (counter++) + ".dat");
-	    	//FileUtils.copyFile(downloadingMediaFile,bufferedFile);
-
-			mediaPlayer = new MediaPlayer();
-    		mediaPlayer.setDataSource(bufferedFile.getAbsolutePath());
-    		//mediaPlayer.setAudioStreamType(AudioSystem.STREAM_MUSIC);
-    		mediaPlayer.prepare();
-    		mediaPlayer.seekTo(curPosition);
-    		
-    		//  Restart if at end of prior beuffered content or mediaPlayer was previously playing.  
-    		//	NOTE:  We test for < 1second of data because the media player can stop when there is still
-        	//  a few milliseconds of data left to play
-    		boolean atEndOfFile = mediaPlayer.getDuration() - mediaPlayer.getCurrentPosition() <= 1000;
-        	if (wasPlaying || atEndOfFile){
-        		mediaPlayer.start();
-        	}
-		}catch (Exception e) {
-	    	Log.e(getClass().getName(), "Error updating to newly loaded content.", e);            		
-		}
-    }
-    
-    private void fireDataLoadUpdate() {
-		Runnable updater = new Runnable() {
-	        public void run() {
-	        	//textStreamed.setText((CharSequence) (totalKbRead + " Kb read"));
-	    		//float loadProgress = ((float)totalKbRead/(float)mediaLengthInKb);
-	    		//progressBar.setSecondaryProgress((int)(loadProgress*100));
-	        	//Log.i("fireDataLoadUpdate", "inside run");
-	        }
-	    };
-	    handler.post(updater);
-    }
-    
-    /**
-     * We have preloaded enough content and started the MediaPlayer so update the buttons & progress meters.
-     */
-    private void fireDataPreloadComplete() {
-    	Runnable updater = new Runnable() {
-	        public void run() {
-	    		mediaPlayer.start();
-	    		//startPlayProgressUpdater();
-	        	//playButton.setEnabled(true);
-	        	//streamButton.setEnabled(false);
-	        }
-	    };
-	    handler.post(updater);
-    }
-
-    private void fireDataFullyLoaded() {
-		Runnable updater = new Runnable() { 
-			public void run() {
-   	        	transferBufferToMediaPlayer();
-	        	//textStreamed.setText((CharSequence) ("Audio full loaded: " + totalKbRead + " Kb read"));
-	        }
-	    };
-	    handler.post(updater);
-    }
-    
-    public MediaPlayer getMediaPlayer() {
-    	return mediaPlayer;
-	}
-	
-    public void startPlayProgressUpdater() {
-    	//float progress = (((float)mediaPlayer.getCurrentPosition()/1000)/(float)mediaLengthInSeconds);
-    	//progressBar.setProgress((int)(progress*100));
-    	
-		if (mediaPlayer.isPlaying()) {
-			Runnable notification = new Runnable() {
-		        public void run() {
-		        	startPlayProgressUpdater();
-				}
-		    };
-		    handler.postDelayed(notification,1000);
-    	}
-    }    
-    
-    public void interrupt() {
-    	//playButton.setEnabled(false);
-    	isInterrupted = true;
-    	validateNotInterrupted();
-    }
     
 	public void moveFile(File	oldLocation, File	newLocation)
 	throws IOException {
