@@ -59,7 +59,7 @@ public class SearchStationTab extends Activity implements Runnable {
 	private Activity maincontext = null;
 	private boolean updatestationsearch = false;
 	
-	private final String searchstationurl = "http://api.npr.org/stations.php?apiKey=" + MyNPR.apikey;
+	private String searchstationurl = "http://api.npr.org/stations.php?apiKey=" ;
 	private String searchstationurlwhole = "";
 	private final String nprliveurl = "http://stream.npr.org:8002/listen.pls";
 	final String STATIONLISTVIEW = "STATIONLISTVIEW";
@@ -73,7 +73,7 @@ public class SearchStationTab extends Activity implements Runnable {
     final static String M3U = ".m3u";
 	
 	final private int MENU_LIVE_NPR = 0;
-	final static public String AUDIO_MIME =  "mpeg";
+	
 	final static public String BITERATE_HEADER =  "icy-br";
 	//final static public String AUDIO_MIME =  "audio/mpeg";
 
@@ -83,6 +83,7 @@ public class SearchStationTab extends Activity implements Runnable {
         super.onCreate(savedInstanceState);
         
         final String TAG = "onCreate - SearchStationTab";
+        searchstationurl = searchstationurl + this.getString( com.webeclubbin.mynpr.R.string.nprapi );
         setContentView(com.webeclubbin.mynpr.R.layout.searchtab);    
         
         final ImageView button_search = (ImageView) findViewById(com.webeclubbin.mynpr.R.id.stationsearchbutton);
@@ -93,6 +94,7 @@ public class SearchStationTab extends Activity implements Runnable {
         
         button_search.setOnClickListener(new OnClickListener() {
       	   public void onClick(View v) {
+      		   
       		   // Perform action on clicks
       		   final String TAG = "button_search";
       		   String searchquery = null;
@@ -102,23 +104,11 @@ public class SearchStationTab extends Activity implements Runnable {
       		   EditText ed = (EditText) findViewById( com.webeclubbin.mynpr.R.id.stationsearchbox);
       		   final LinearLayout header = (LinearLayout) findViewById( com.webeclubbin.mynpr.R.id.header);
       		   //Show views if they are hiding else process users input
+      		   
       		   if (header.getVisibility() == View.GONE){
-      			   /*final TextView ft = (TextView) findViewById( com.webeclubbin.mynpr.R.id.findtextview);
-      			   final float fromXDelta = header.getLeft();
-      			   final float toXDelta = header.getLeft();
-      			   final float fromYDelta = header.getTop() ;
-      			   final float toYDelta = header.getBottom() ; 
-      			   TranslateAnimation showview = new TranslateAnimation( fromXDelta,  toXDelta, fromYDelta, toYDelta);
-      			   showview.setDuration(2000);
-      			   showview.setFillEnabled(true);
-      			   showview.setFillAfter(true);
-      			   header.setAnimation(showview);*/
+
       			   header.setVisibility(View.VISIBLE);
-      			   	Log.i(TAG,"Show hidden views");
-      		    	//Hide a few Views so we create more screen space for the user
-      				//ed.setVisibility(View.VISIBLE);
-      				//ImageView im = (ImageView) findViewById( com.webeclubbin.mynpr.R.id.npr2);
-      				//im.setVisibility(View.VISIBLE);
+      			   Log.i(TAG,"Show hidden views");
       		   } else {
       			   Log.i(TAG,"Process user input");
       			   String searchtext = ed.getText().toString();
@@ -257,46 +247,7 @@ public class SearchStationTab extends Activity implements Runnable {
     	
     	Log.i(TAG, "ENTER");
 
-    	final LinearLayout header = (LinearLayout) findViewById( com.webeclubbin.mynpr.R.id.header);
-    	/*final LinearLayout sf = (LinearLayout) findViewById( com.webeclubbin.mynpr.R.id.statfind);
-    	final TextView ft = (TextView) findViewById( com.webeclubbin.mynpr.R.id.findtextview);
-
-    	Log.i(TAG, "Hide top views: Location of Y: " + String.valueOf( header.getTop()) + " Location of X: " + String.valueOf( header.getLeft() )
-    			+ " Location of Bottom: " + String.valueOf( header.getBottom() ));
-    	final float fromXDelta = header.getLeft();
-    	final float toXDelta = header.getLeft();
-    	final float fromYDelta = header.getTop() ;
-    	final float toYDelta = header.getTop() - header.getBottom() + ft.getHeight(); 
-    	TranslateAnimation hideview = new TranslateAnimation( fromXDelta,  toXDelta, fromYDelta, toYDelta);
-    	hideview.setDuration(2000);
-    	hideview.setFillEnabled(true);
-    	hideview.setFillAfter(true);
-    	hideview.setZAdjustment(Animation.ZORDER_BOTTOM);
-    	
-    	hideview.setAnimationListener(new Animation.AnimationListener() {
-    			public void onAnimationEnd(Animation animation){
-    				Log.i("hideview.setAnimationListener, has it ended", String.valueOf( animation.hasEnded() ) );
-    				Log.i("hideview.setAnimationListener, has it started", String.valueOf( animation.hasStarted() ) );
-    				//sf.forceLayout();
-    				//lvsearch.forceLayout();
-    				//sf.invalidate();
-    				//sf.requestLayout();
-    				//lvsearch.requestLayout();
- 
-    				//lvsearch.invalidate();
-    				header.setVisibility(View.GONE);
-    			}
-    			public void onAnimationStart(Animation animation){
-    				
-    			}
-    			public void onAnimationRepeat(Animation animation){
-	
-    			}
-    		}
-    	); */
-    	
-    	//header.startAnimation(hideview);
-    	
+    	final LinearLayout header = (LinearLayout) findViewById( com.webeclubbin.mynpr.R.id.header);   	
  		
     	lvsearch.setAdapter( new SearchStationAdapter(maincontext, 
     			com.webeclubbin.mynpr.R.layout.stationrow, stationstodisplay) );
@@ -360,9 +311,6 @@ public class SearchStationTab extends Activity implements Runnable {
     	Vector<String> radio = new Vector<String>();
     	final String filetoken = "file";
     	final String SPLITTER = "=";
-
-    	//int byteRead = 0;
-    	//byte[] buf = new byte[1024];
 
    		try {
    			url = new URL(strURL);
@@ -522,8 +470,8 @@ public class SearchStationTab extends Activity implements Runnable {
         		url = new URL(playthis);
         		urlConn = (HttpURLConnection)url.openConnection();
         		//See if this is a type we can handle
-        		Log.i(TAG, urlConn.getContentType () );
-        		if (urlConn.getContentType ().toLowerCase().contains(AUDIO_MIME)){
+        		Log.i(TAG, "Content Type: " + urlConn.getContentType () );
+        		if (urlConn.getContentType ().toLowerCase().contains(PlayListTab.AUDIO_MIME)){
         			int bitrate = 56;
         			String temp = urlConn.getHeaderField(BITERATE_HEADER);
         			Log.i(TAG, "Bitrate: " + temp );
@@ -531,17 +479,33 @@ public class SearchStationTab extends Activity implements Runnable {
         				bitrate = new Integer(temp).intValue();
         			}
         			
-        			StreamingMediaPlayer audioStreamer = new StreamingMediaPlayer(a);
-            		audioStreamer.startStreaming(playthis,bitrate);
+                    i = new Intent(Intent.ACTION_VIEW, uri, a, com.webeclubbin.mynpr.PlayListTab.class  );
+                    
+                    //launch intent
+                    Log.i(TAG, "Launch Playlist Tab");
+                    //previousdialog.dismiss();
+                    //a.startActivity(i);
         			
-        		} else {
-        			
-        		}
+        			//StreamingMediaPlayer audioStreamer = new StreamingMediaPlayer(a);
+            		//audioStreamer.startStreaming(playthis,bitrate);
+                    
+                    MyNPR parent = (MyNPR) a.getParent();
+                    parent.tabHost.setCurrentTabByTag(MyNPR.tPLAY);
+                    View playtabview = parent.tabHost.getCurrentView();
 
+                    TextView t = (TextView) playtabview.findViewById(com.webeclubbin.mynpr.R.id.playingcontent);
+                    t.setText(playthis);
             		
-        			
-        			
-        		
+        		} else {
+
+                	uri = Uri.parse( playthis );
+                    i = new Intent(Intent.ACTION_VIEW, uri, a, com.webeclubbin.mynpr.HTMLviewer.class  );
+                    
+                    //launch intent
+                    Log.i(TAG, "Launch HTML viewer");
+                    a.startActivity(i);
+        		}
+	
         	} catch (IOException ioe) {
         		Log.e( TAG, "Could not connect to " +  playthis );
         	} 
@@ -581,7 +545,9 @@ public class SearchStationTab extends Activity implements Runnable {
 						Toast.makeText(a, "No Audio Found inside Station's Playlist", Toast.LENGTH_LONG).show();
 					} else if ( (r.length == 1) && (! r[0].toLowerCase().endsWith(PLS)) && (! r[0].toLowerCase().endsWith(M3U)) ) {
 						Log.i(TAG, "Found One" );
-						playthis = r[0];
+						
+						launchhelper(r, a, d);
+						/*playthis = r[0];
 						uri = Uri.parse( playthis );
 						i = new Intent(Intent.ACTION_VIEW); 
 			            //i.setDataAndType(uri, AUDIO_MIME);
@@ -602,7 +568,7 @@ public class SearchStationTab extends Activity implements Runnable {
 			        		Log.e( TAG, "Could not connect to " +  playthis );
 			        	}
 						
-						a.startActivity(i);
+						a.startActivity(i);*/
 
 					} else {
 						Log.i(TAG, "Found Several or a list: " );
