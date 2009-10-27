@@ -11,8 +11,9 @@
         </activity>
     <activity android:name="SearchStationTab"></activity>
     <activity android:name="PopStoryTab"></activity>
+    <activity android:name="PlayListTab"></activity>
 
-<activity android:name="HTMLviewer"></activity>
+	<activity android:name="HTMLviewer"></activity>
 </application>
 
 
