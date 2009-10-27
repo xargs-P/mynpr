@@ -1,5 +1,5 @@
 package com.webeclubbin.mynpr;
-//Some icons used: http://forum.xda-developers.com/showthread.php?t=471195
+
 import java.util.Set;
 
 import android.app.Activity;
@@ -14,10 +14,12 @@ public class MyNPR extends TabActivity {
 
 	Activity maincontext = null;
 	
-	final String tPOP = "tab_pop";
-	final String tSEARCH = "tab_search";
+	public static final String tPOP = "tab_pop";
+	public static final String tSEARCH = "tab_search";
+	public static final String tPLAY = "tab_play";
 	final static String packagename = "com.webeclubbin.mynpr";
-	final static String apikey = "";
+	//final static String apikey = "MDAzMzcxNzY2MDEyNDAyODA5MTU1YTJmYw001";
+	TabHost tabHost = null;
 
 	Bundle b = null;
 
@@ -53,18 +55,24 @@ public class MyNPR extends TabActivity {
         getWindowManager().getDefaultDisplay().getMetrics(dm);
 
         Log.i(TAG, "Setup TAB");
-        TabHost tabHost = getTabHost();
+        tabHost = getTabHost();
         Intent tempip = new Intent();
         
         Log.i(TAG, "Setup Pop Story Tab");
         tempip.setClass(maincontext , com.webeclubbin.mynpr.PopStoryTab.class );
-        tabHost.addTab(tabHost.newTabSpec(tPOP).setIndicator("What's Popular?").setContent( tempip ));
+        tabHost.addTab(tabHost.newTabSpec(tPOP).setIndicator("Popular").setContent( tempip ));
+        //tabHost.addTab(tabHost.newTabSpec(tPOP).setIndicator("What's Popular?").setContent( tempip ));
         
         Intent tempis = new Intent();
         Log.i(TAG, "Setup Station Search Tab");
-        //s = new SearchStationTab();
         tempis.setClass(maincontext , com.webeclubbin.mynpr.SearchStationTab.class );
-        tabHost.addTab(tabHost.newTabSpec(tSEARCH).setIndicator("Station Finder").setContent( tempis ) );
+        tabHost.addTab(tabHost.newTabSpec(tSEARCH).setIndicator("Stations").setContent( tempis ) );
+        
+        Intent tempipl = new Intent();
+        Log.i(TAG, "Playlist Tab");
+        tempipl.setClass(maincontext , com.webeclubbin.mynpr.PlayListTab.class );
+        tabHost.addTab(tabHost.newTabSpec(tPLAY).setIndicator("Playlist").setContent( tempipl ) );
+        
         tabHost.setCurrentTab(0);  
 
     }

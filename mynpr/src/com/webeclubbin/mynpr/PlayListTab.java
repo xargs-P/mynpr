@@ -1,23 +1,16 @@
 package com.webeclubbin.mynpr;
 
-import java.io.BufferedReader;
-import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.PrintWriter;
 import java.net.URL;
 import java.net.URLConnection;
-import java.text.SimpleDateFormat;
 import java.util.Calendar;
-import java.util.Date;
-import java.util.Set;
 
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.parsers.SAXParser;
@@ -27,13 +20,15 @@ import org.xml.sax.SAXException;
 
 import android.app.Activity;
 import android.app.ProgressDialog;
+import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.net.Uri;
+import android.net.wifi.WifiManager;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
-import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -45,11 +40,13 @@ import android.widget.AdapterView;
 import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.TextView;
-import android.widget.Toast;
 import android.widget.AdapterView.OnItemClickListener;
 
-public class PopStoryTab extends Activity implements Runnable {
+public class PlayListTab extends Activity implements Runnable {
 	private ListView lv = null;
+	final static public String AUDIO_MIME =  "audio/mpeg";
+	final static public String HTML_MIME =  "html";
+	private IntentFilter ourintentfilter ; 
 	private ProgressDialog dialog = null;
 	private String [][] lvpopstories = null;
 	private Activity maincontext = null;
@@ -62,15 +59,13 @@ public class PopStoryTab extends Activity implements Runnable {
 	private final String IMAGES = "IMAGES";
 	
 	private final String popfile = "popstory.xml";
-	private final String popdatefile = "popstory.timeofday";  
+	private final String popdatefile = "popstory.timeofday";
 
-	private String popstoriesurl = "http://api.npr.org/query?id=100&fields=title,image&output=NPRML&apiKey="  ;
-	//private final String DATE_FORMAT_NOW = "EEE, MMM d 'at' hh:mm a";
-	private final String DATE_FORMAT_NOW = "h:mm a";
-	private Thread thread = null;
-	private ImageView spinner,npr = null;
-	private TextView button_poprefresh = null;
 	
+ 
+	private Thread thread = null;
+	private ImageView spinner,npr,button_playstatus = null;
+ 
 	private final int MENU_REFRESH_POPSTORIES = 0;
 
     /** Called when the activity is first created. */
@@ -78,26 +73,31 @@ public class PopStoryTab extends Activity implements Runnable {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         
-        final String TAG = "onCreate - PopStoryTab";
-        setContentView(com.webeclubbin.mynpr.R.layout.popstorytab);
-        popstoriesurl = popstoriesurl + this.getString( com.webeclubbin.mynpr.R.string.nprapi );
-        
+        final String TAG = "onCreate - PlayListTab";
+        setContentView(com.webeclubbin.mynpr.R.layout.playlisttab);
         maincontext = this;
 
-        // Resize Button Images
-        DisplayMetrics dm = new DisplayMetrics();
-        getWindowManager().getDefaultDisplay().getMetrics(dm);
-
-        button_poprefresh = (TextView) findViewById(com.webeclubbin.mynpr.R.id.poprefresh);
+        try {
+        	ourintentfilter = new IntentFilter(Intent.ACTION_VIEW, AUDIO_MIME);
+        } catch (IntentFilter.MalformedMimeTypeException  e ) {
+        	Log.e(TAG, "MalformedMimeTypeException");
+        }
+        registerReceiver (playListReceiver, ourintentfilter);
         
-		lv = (ListView) findViewById(com.webeclubbin.mynpr.R.id.lview);
-       
+        button_playstatus = (ImageView) findViewById(com.webeclubbin.mynpr.R.id.playstatus);
+  		lv = (ListView) findViewById(com.webeclubbin.mynpr.R.id.playlist);
+        
+  		
+  		
+
+        
+        
         lv.setOnItemClickListener(new OnItemClickListener() {
             public void onItemClick(AdapterView parent, View v, int position, long id) {
                 Uri uri = null;
                 Intent i = null;
                 String oururl = null;
-                String TAG = "Intent / Open URL";
+                String TAG = "Playlist List";
                 
                 //Open Selected stories webpage
             	String [] link = lvpopstories[2];
@@ -113,28 +113,26 @@ public class PopStoryTab extends Activity implements Runnable {
             }
         });
 
-        button_poprefresh.setOnClickListener(new OnClickListener() {
+        button_playstatus.setOnClickListener(new OnClickListener() {
      	   public void onClick(View v) {
 
-     		   final Animation shrinkspin = AnimationUtils.loadAnimation(PopStoryTab.this, R.anim.shrinkspin);
-     		   final Animation rotate = AnimationUtils.loadAnimation(PopStoryTab.this, R.anim.rotate);
-     		   npr = (ImageView) findViewById(R.id.npr);
+     		   final Animation shrinkspin = AnimationUtils.loadAnimation(PlayListTab.this, R.anim.shrinkspin);
+     		   final Animation rotate = AnimationUtils.loadAnimation(PlayListTab.this, R.anim.rotate);
+     		   //npr = (ImageView) findViewById(R.id.npr);
      		   spinner = (ImageView) findViewById(R.id.process); 
      		   spinner.startAnimation(rotate);
-     		   npr.startAnimation(shrinkspin);
-     		   updatepopstories = true;
-     		   thread = new Thread(PopStoryTab.this);
-     		   thread.start();
+     		   //npr.startAnimation(shrinkspin);
+     		   //updatepopstories = true;
+     		   //thread = new Thread(PlayListTab.this);
+     		   //thread.start();
      	   }
         }); 
         
         //Setup any saved views
-        if (savedInstanceState == null){
+        /*if (savedInstanceState == null){
         	Log.i(TAG, "Bundle savedInstanceState is null.");
         	
-    		//Check to see if we need to even download the web content    		
-        	timeToUpdate();	
-        	
+         	
     		MyNPR parent = (MyNPR) getParent(); 
     		Log.i(TAG, "Parent| bundle null? " + parent.isbundlenull() );
         	if ( parent.isbundlenull()  ) {
@@ -189,60 +187,32 @@ public class PopStoryTab extends Activity implements Runnable {
         	    	Log.e(TAG, e.toString());
         	    }
         	}
-        	
-        	if ( timeToUpdate() ){
-        		Toast.makeText(PopStoryTab.this, "Refreshing Stories...", Toast.LENGTH_LONG).show();
-        		button_poprefresh.performClick();
-        	}
-        	
-        }
+
+        }*/
 
     }
     
-    private boolean timeToUpdate(){
-    	final String TAG = "timeToUpdate";
-    	final int TIMETOWAIT = 1800;
-		//Check to see if we need to even download the web content
-    	try {
-    		
-    		FileInputStream fis = openFileInput(popdatefile);
-    		InputStreamReader isr = new InputStreamReader(fis);
-    		BufferedReader input =  new BufferedReader(isr);  
-    		long oldtime = Long.parseLong( input.readLine() );
-    		long currenttime = System.currentTimeMillis() ;
-    		long elaspedtime =  ( currenttime - oldtime ) / 1000 ;
-
-    		fis.close();
-    		isr.close();
-    		input.close();
-    		Log.i( TAG, "Got time since last update");
-    		
-    		if ( elaspedtime < TIMETOWAIT) {
-    			//under TIMETOWAIT
-    			updatepopstories = false;
-    			//Save time of day we downloaded file
-            	SimpleDateFormat sdf = new SimpleDateFormat(DATE_FORMAT_NOW);
-            	popstorydate = sdf.format( new Date(oldtime) );
-            	
-    			Log.i( TAG, "Under " + (TIMETOWAIT/60) + "mins since last update. So no need to redownload");
-        		return false;
-        	
-    		} else {
-    			Log.i( TAG, "Over " + (TIMETOWAIT/60) + "mins since last update: " + elaspedtime);
-    			return true;
-    		}
-
-    	} catch (FileNotFoundException	e) {
-    		Log.e( TAG, e.toString() );
-    		return true;
-    	} catch (IOException ioe) {
-    		Log.e(TAG, ioe.getMessage() );
-    		return true;
-    	}
-    }
+    private BroadcastReceiver playListReceiver = new BroadcastReceiver() {
+  	        @Override
+  	        public void onReceive(Context context, Intent intent) {
+  	        	final String TAG = "BroadcastReceiver - onReceive";
+  	        	Uri uri = intent.getData();
+  	        	if ( uri == null ) {
+  	        		Log.e(TAG , "uri null");
+  	        	} else {
+  	        		Log.i(TAG, uri.toString());
+  	        		TextView t = (TextView) findViewById(com.webeclubbin.mynpr.R.id.playingcontent);
+  	  	        	t.setText(uri.toString());
+  	  	        	//Grab Image and/or Station Name from intent extra
+  	        		
+  	        	}
+  	          
+  	        }
+  	    };
+ 
     
     public void run() {	
-    		lvpopstories = grabdata_popstories(popstoriesurl);
+    		//lvpopstories = grabdata_popstories(popstoriesurl);
     		handler.sendEmptyMessage(0);
     }
     
@@ -316,7 +286,6 @@ public class PopStoryTab extends Activity implements Runnable {
     	//Check to see if we need to download anything
     	if ( updatepopstories == true ) {
     	
-    		Log.i( TAG, "Connect to " + strURL );
     		try {
     			url = new URL(strURL);
     			urlConn = url.openConnection();
@@ -339,8 +308,8 @@ public class PopStoryTab extends Activity implements Runnable {
     		
     			//Save time of day we downloaded file
     			Calendar cal = Calendar.getInstance();
-    			SimpleDateFormat sdf = new SimpleDateFormat(DATE_FORMAT_NOW);
-    			popstorydate = sdf.format(cal.getTime());
+    			//SimpleDateFormat sdf = new SimpleDateFormat(DATE_FORMAT_NOW);
+    			//popstorydate = sdf.format(cal.getTime());
     		
     			fos = openFileOutput(popdatefile, 0);
     			PrintWriter datewriter = new PrintWriter(fos,true);
@@ -356,20 +325,14 @@ public class PopStoryTab extends Activity implements Runnable {
     			Log.e(TAG, "Unable to save file locally " + ioe.getMessage() );
     		}
     	}
-    	
-    	saxstart = System.currentTimeMillis(); 
+    	saxstart = System.currentTimeMillis();
     	try {
     		FileInputStream fis = openFileInput(popfile);
     		saxParser =  factory.newSAXParser();
     		Log.i( TAG, "Before: Parser - SAX");
     		saxParser.parse( fis , myHandler);
-    		
+    		//saxParser.parse( urlConn.getInputStream() , myHandler);
     		Log.i( TAG, "AFTER: Parse - SAX");
-    	} catch (FileNotFoundException notfound) {
-    		Log.e(TAG, "File not found.");
-    		Log.i(TAG, "redownload data");
-    		updatepopstories = true;
-			grabdata_popstories( strURL );
     	} catch (IOException ioe) {
     		Log.e(TAG, "Invalid XML format?? " + ioe.getMessage() );
     	} catch (ParserConfigurationException pce) {
@@ -381,7 +344,7 @@ public class PopStoryTab extends Activity implements Runnable {
     	Log.i("SAX - TIMER", "Time it took in seconds:" + Long.toString(saxelapsedTimeMillis));
     	String [][] r = { myHandler.getTitles() , myHandler.getImages(), myHandler.getLinks() };
 
-    	return r; 
+    	return r;
     }
     
 	//Save UI state changes to the instanceState.
@@ -428,7 +391,7 @@ public class PopStoryTab extends Activity implements Runnable {
     public boolean onOptionsItemSelected(MenuItem item) {
         switch (item.getItemId()) {
         case MENU_REFRESH_POPSTORIES:
-        	button_poprefresh.performClick();
+        	button_playstatus.performClick();
             return true;
         }
         return false;

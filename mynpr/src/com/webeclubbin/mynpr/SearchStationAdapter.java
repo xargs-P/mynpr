@@ -1,14 +1,9 @@
 package com.webeclubbin.mynpr;
 
-import java.io.IOException;
-import java.net.URL;
-import java.net.URLConnection;
-
 import android.app.Activity;
 import android.app.Dialog;
 import android.content.Intent;
 import android.graphics.Bitmap;
-import android.media.MediaPlayer;
 import android.net.Uri;
 import android.util.Log;
 import android.view.View;
@@ -217,83 +212,15 @@ public class SearchStationAdapter extends ArrayAdapter<Station> {
     		Log.i(TAG, "No data returned" );
     		Toast.makeText(a, "No Audio Found inside Station's Playlist", Toast.LENGTH_LONG).show();
     	} else if (r.length == 1) {
-        	uri = Uri.parse( r[0] );
-			i = new Intent(Intent.ACTION_VIEW); 
-//			i.setDataAndType(uri, SearchStationTab.AUDIO_MIME);
-			
             //launch intent
             Log.i(TAG, "Position:" + position + " url " + t.getText().toString() + " Got this url out of it " + r[0]  );
-
-            URL urltemp;
-        	URLConnection urlConn = null;
-        	try {
-        		urltemp = new URL(r[0]);
-        		urlConn = urltemp.openConnection();
-        		Log.i(TAG, "Content Type: " + urlConn.getContentType() );
-        		String mimetype = urlConn.getContentType().toLowerCase();
-        		i.setDataAndType(uri, mimetype);
-        		a.startActivity(i);
-
-        	} catch (IOException ioe) {
-        		Log.e( TAG, "Could not connect to " +  r[0]);
-        	}
+            SearchStationTab.launchhelper(r, a, d);
+            
     	} else {
     		//Let users select which link they want to play
     		Log.i(TAG, "Multiple selections for audio" );
     		SearchStationTab.launchhelper(r, a, d);
     	}
 	}
-	//Launch URL user selected and display dialog if more than one choice
-	/*public void launchhelper( String[] s , final Activity a, final Dialog previousdialog) {
-		//TODO Let users select which link they want to play
-		String TAG = "launchhelper";
-		Log.i(TAG, "START" );
-		final Dialog d = new Dialog(a);
-    	d.setContentView(com.webeclubbin.mynpr.R.layout.urlpopup);
-    	d.setTitle("Multiple Audio links found.");
-    	ListView lv2 = (ListView) d.findViewById(com.webeclubbin.mynpr.R.id.urllist);
-    	lv2.setAdapter(new ArrayAdapter<String>(a,
-        		com.webeclubbin.mynpr.R.layout.urllist ,
-                s));
-    	lv2.setOnItemClickListener(new OnItemClickListener() {
-            public void onItemClick(AdapterView parent, View v, int position, long id) {
-                Uri uri = null;
-                Intent i = null;
-                String TAG = "Intent / Open URL";
-                
-                //Open Selected media URL
-            	TextView t = (TextView)v;
-            	i = new Intent("android.intent.action.VIEW" ); 
-            	i.addCategory("android.intent.category.BROWSABLE");
-            	String url = t.getText().toString();
-            	String[] r = null;
-            	if ( url.toLowerCase().endsWith(PLS)) {
-            		r = com.webeclubbin.mynpr.SearchStationTab.parsePLS( url , a );
-            	} else if ( url.toLowerCase().endsWith(M3U)) {
-            		r = com.webeclubbin.mynpr.SearchStationTab.parseM3U( url, a );
-            	} else {
-            		r = new String[] {url};
-            	}
-            	
-            	//Check data we get back
-            	if ( r == null ) {
-            		//Create toast telling user we have nothing.
-            		Log.i(TAG, "No data returned" );
-            		Toast.makeText(a, "No Audio Found inside Station's Playlist", Toast.LENGTH_LONG).show();
-            	} else if (r.length == 1) {
-                	uri = Uri.parse( r[0] );
-                    i.setData(uri); 
-                    //launch intent
-                    Log.i(TAG, "Position:" + position + " url " + t.getText().toString() + " Got this url out of it " + r[0]  );
-                    a.startActivity(i);
-            	} else {
-            		//Let users select which link they want to play
-            		launchhelper(r, a, d);
-            	}
-            }
-        });
-    	Log.i(TAG, "Show Dialog and dismiss old one" );
-    	previousdialog.dismiss();
-    	d.show();
-	} */
+
 }
