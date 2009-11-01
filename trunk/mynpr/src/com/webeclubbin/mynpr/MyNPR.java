@@ -1,10 +1,14 @@
 package com.webeclubbin.mynpr;
 
+import java.util.Iterator;
+import java.util.List;
 import java.util.Set;
 
 import android.app.Activity;
 import android.app.TabActivity;
 import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.content.pm.ResolveInfo;
 import android.os.Bundle;
 import android.util.DisplayMetrics;
 import android.util.Log;
@@ -77,11 +81,31 @@ public class MyNPR extends TabActivity {
 
     }
     
+    //Returns if the bundle sent to the onCreate method was null or not
     public boolean isbundlenull () {
     	if ( b == null) {
     		return true;
     	} else {
     		return false;
     	}
+    }
+    
+    //Broadcast intent from one tab to another
+    public void broadcastToTab( Intent i, String permissions ){
+    	String TAG = "broadcastToTab";
+    	Log.i(TAG, "Switch to tab");
+    	tabHost.setCurrentTabByTag(permissions);
+    	Log.i(TAG, "Sending intent");
+    	//maincontext.sendBroadcast(i , permissions);
+    	PackageManager pm = getPackageManager();
+    	//List<ResolveInfo> list = pm.queryBroadcastReceivers(i, PackageManager.GET_RESOLVED_FILTER);
+    	//List<ResolveInfo> list = pm.queryBroadcastReceivers(i, PackageManager.MATCH_DEFAULT_ONLY);
+    	List<ResolveInfo> list = pm.queryBroadcastReceivers(i, PackageManager.GET_INTENT_FILTERS);
+    	Iterator it = list.iterator();
+    	while (it.hasNext()){
+    		ResolveInfo r = (ResolveInfo)it.next();
+    		Log.i(TAG, r.toString() );
+    	}
+    	maincontext.sendBroadcast(i );
     }
 }

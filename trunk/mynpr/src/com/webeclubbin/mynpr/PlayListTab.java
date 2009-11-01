@@ -1,22 +1,10 @@
 package com.webeclubbin.mynpr;
 
-import java.io.ByteArrayOutputStream;
+import java.io.BufferedReader;
+import java.io.DataInputStream;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.ObjectOutputStream;
-import java.io.PrintWriter;
-import java.net.URL;
-import java.net.URLConnection;
-import java.util.Calendar;
-
-import javax.xml.parsers.ParserConfigurationException;
-import javax.xml.parsers.SAXParser;
-import javax.xml.parsers.SAXParserFactory;
-
-import org.xml.sax.SAXException;
+import java.io.InputStreamReader;
 
 import android.app.Activity;
 import android.app.ProgressDialog;
@@ -25,7 +13,6 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.net.Uri;
-import android.net.wifi.WifiManager;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
@@ -46,9 +33,13 @@ public class PlayListTab extends Activity implements Runnable {
 	private ListView lv = null;
 	final static public String AUDIO_MIME =  "audio/mpeg";
 	final static public String HTML_MIME =  "html";
+	final static public String STATION = "STATION";
+	final static public String LOGO = "LOGO";
+	final static public String URL = "URL";
+	
 	private IntentFilter ourintentfilter ; 
 	private ProgressDialog dialog = null;
-	private String [][] lvpopstories = null;
+	private PlayList playlist = null;
 	private Activity maincontext = null;
 	private String popstorydate = null;
 	private boolean updatepopstories = true;
@@ -58,15 +49,32 @@ public class PlayListTab extends Activity implements Runnable {
 	private final String POPDATE = "POPDATE";
 	private final String IMAGES = "IMAGES";
 	
-	private final String popfile = "popstory.xml";
-	private final String popdatefile = "popstory.timeofday";
+	private final String playlistfile = "playlist";
 
-	
- 
 	private Thread thread = null;
 	private ImageView spinner,npr,button_playstatus = null;
  
 	private final int MENU_REFRESH_POPSTORIES = 0;
+	
+    private BroadcastReceiver playListReceiver = new BroadcastReceiver() {
+	        @Override
+	        public void onReceive(Context context, Intent intent) {
+	        	final String TAG = "BroadcastReceiver - onReceive";
+
+	  	        	//Grab Image and/or Station Name from intent extra
+	  	        	Log.i(TAG, "STATION " + intent.getStringExtra(STATION));
+	  	        	Log.i(TAG, "LOGO " + intent.getStringExtra(LOGO));
+	  	        	Log.i(TAG, "URL " + intent.getStringExtra(URL));
+	  	        	Log.i(TAG, "MIME " + intent.getType());
+
+	        		TextView station = (TextView) findViewById(com.webeclubbin.mynpr.R.id.playingstation);
+		  	        station.setText(intent.getStringExtra(STATION) + ": ");   
+		  	        TextView content = (TextView) findViewById(com.webeclubbin.mynpr.R.id.playingcontent);
+		  	        content.setText(intent.getStringExtra(URL)); 
+		  	        //Scroller s = new Scroller(context , new AnticipateOvershootInterpolator (0) );
+		  	        //content.setScroller(s);
+	        }
+    };
 
     /** Called when the activity is first created. */
     @Override
@@ -77,20 +85,14 @@ public class PlayListTab extends Activity implements Runnable {
         setContentView(com.webeclubbin.mynpr.R.layout.playlisttab);
         maincontext = this;
 
-        try {
-        	ourintentfilter = new IntentFilter(Intent.ACTION_VIEW, AUDIO_MIME);
-        } catch (IntentFilter.MalformedMimeTypeException  e ) {
-        	Log.e(TAG, "MalformedMimeTypeException");
-        }
+        Log.i(TAG, "Setup IntentFilter");
+        ourintentfilter = new IntentFilter(MyNPR.tPLAY);
+		
+		Log.i(TAG, "Register IntentFilter");
         registerReceiver (playListReceiver, ourintentfilter);
         
         button_playstatus = (ImageView) findViewById(com.webeclubbin.mynpr.R.id.playstatus);
   		lv = (ListView) findViewById(com.webeclubbin.mynpr.R.id.playlist);
-        
-  		
-  		
-
-        
         
         lv.setOnItemClickListener(new OnItemClickListener() {
             public void onItemClick(AdapterView parent, View v, int position, long id) {
@@ -191,28 +193,10 @@ public class PlayListTab extends Activity implements Runnable {
         }*/
 
     }
-    
-    private BroadcastReceiver playListReceiver = new BroadcastReceiver() {
-  	        @Override
-  	        public void onReceive(Context context, Intent intent) {
-  	        	final String TAG = "BroadcastReceiver - onReceive";
-  	        	Uri uri = intent.getData();
-  	        	if ( uri == null ) {
-  	        		Log.e(TAG , "uri null");
-  	        	} else {
-  	        		Log.i(TAG, uri.toString());
-  	        		TextView t = (TextView) findViewById(com.webeclubbin.mynpr.R.id.playingcontent);
-  	  	        	t.setText(uri.toString());
-  	  	        	//Grab Image and/or Station Name from intent extra
-  	        		
-  	        	}
-  	          
-  	        }
-  	    };
  
     
     public void run() {	
-    		//lvpopstories = grabdata_popstories(popstoriesurl);
+    		lvplaylist = grabdata_playlist();
     		handler.sendEmptyMessage(0);
     }
     
@@ -269,77 +253,30 @@ public class PlayListTab extends Activity implements Runnable {
     	lv.invalidate();
     }    
    
-    /** Parse Popular Stories XML file */
-    private String[][] grabdata_popstories(String strURL) {
-    	URL url;
-    	URLConnection urlConn = null;
-    	String TAG = "grabdata - pop stories";
-    	SAXParser saxParser;
-    	long saxelapsedTimeMillis;
-    	long saxstart;
-    	int byteRead = 0;
-    	byte[] buf = new byte[1024];
+    /** Playlist from file */
+    private PlayList grabdata_playlist() {
 
-    	SAXParserFactory factory = SAXParserFactory.newInstance();
-    	MyContentHandlePopStoriesSAX myHandler = new MyContentHandlePopStoriesSAX();
-
-    	//Check to see if we need to download anything
-    	if ( updatepopstories == true ) {
+    	String TAG = "grabdata - Playlist";
     	
-    		try {
-    			url = new URL(strURL);
-    			urlConn = url.openConnection();
-    			Log.i( TAG, "Got data for SAX");
-    		} catch (IOException ioe) {
-    			Log.e( TAG, "Could not connect to " + strURL );
-    		}
-    	
-    		//Save to file
-    		try {
-    			InputStream is = urlConn.getInputStream() ;
-    			FileOutputStream fos = openFileOutput(popfile, Context.MODE_PRIVATE);
-    		  		
-    			while (  (byteRead = is.read(buf)) != -1) {
-    				fos.write(buf, 0, byteRead);
-    			}
-    			is.close();
-    			fos.close();
-    			Log.i( TAG, "Saved xml to file");
-    		
-    			//Save time of day we downloaded file
-    			Calendar cal = Calendar.getInstance();
-    			//SimpleDateFormat sdf = new SimpleDateFormat(DATE_FORMAT_NOW);
-    			//popstorydate = sdf.format(cal.getTime());
-    		
-    			fos = openFileOutput(popdatefile, 0);
-    			PrintWriter datewriter = new PrintWriter(fos,true);
-    			//print text to file
-    			datewriter.println( System.currentTimeMillis() );
-    			fos.close();
-    			datewriter.close();
-    			Log.i( TAG, "Saved xml download date to file");
-
-    		} catch (FileNotFoundException	e) {
-    			Log.e( TAG, e.toString() );
-    		} catch (IOException ioe) {
-    			Log.e(TAG, "Unable to save file locally " + ioe.getMessage() );
-    		}
-    	}
-    	saxstart = System.currentTimeMillis();
     	try {
-    		FileInputStream fis = openFileInput(popfile);
-    		saxParser =  factory.newSAXParser();
-    		Log.i( TAG, "Before: Parser - SAX");
-    		saxParser.parse( fis , myHandler);
-    		//saxParser.parse( urlConn.getInputStream() , myHandler);
-    		Log.i( TAG, "AFTER: Parse - SAX");
+    		FileInputStream fis = openFileInput(playlistfile);
+    		if (fis == null){
+    			return null;
+    		}
+    		DataInputStream in = new DataInputStream(fis);
+            BufferedReader br = new BufferedReader(new InputStreamReader(in));
+            String strLine;
+            //Read File Line By Line
+            while ((strLine = br.readLine()) != null)   {
+            	// Print the content on the console
+            	System.out.println (strLine);
+            }
+    		//Grab text
+    		
     	} catch (IOException ioe) {
     		Log.e(TAG, "Invalid XML format?? " + ioe.getMessage() );
-    	} catch (ParserConfigurationException pce) {
-    		Log.e(TAG, "Could not parse XML " + pce.getMessage());
-    	} catch (SAXException se) {
-    		Log.e(TAG, "Could not parse XML"  + se.getMessage());
     	}
+    	
     	saxelapsedTimeMillis = (System.currentTimeMillis() - saxstart ) / 1000;
     	Log.i("SAX - TIMER", "Time it took in seconds:" + Long.toString(saxelapsedTimeMillis));
     	String [][] r = { myHandler.getTitles() , myHandler.getImages(), myHandler.getLinks() };
@@ -348,7 +285,7 @@ public class PlayListTab extends Activity implements Runnable {
     }
     
 	//Save UI state changes to the instanceState.
-    @Override
+    /*@Override
     public void onSaveInstanceState(Bundle instanceState) {
     	String TAG = "onSaveInstanceState - PopStoryTab";
 
@@ -377,7 +314,7 @@ public class PlayListTab extends Activity implements Runnable {
         instanceState.putStringArray(IMAGES, ih.getUrls() );
 
     	super.onSaveInstanceState(instanceState);
-    }
+    }*/
     
     /** Set up Menu for this Tab */
     @Override

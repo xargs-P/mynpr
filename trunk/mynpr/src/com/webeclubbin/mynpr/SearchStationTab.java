@@ -14,6 +14,8 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLConnection;
 import java.net.URLEncoder;
+import java.util.Iterator;
+import java.util.List;
 import java.util.Set;
 import java.util.Vector;
 import java.util.regex.Matcher;
@@ -29,6 +31,8 @@ import android.app.Activity;
 import android.app.Dialog;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.content.pm.ResolveInfo;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
@@ -442,14 +446,14 @@ public class SearchStationTab extends Activity implements Runnable {
         switch (item.getItemId()) {
         case MENU_LIVE_NPR:
         	String [] list = parsePLS(nprliveurl, maincontext);
-        	launchhelper(list, maincontext, null);
+        	launchhelper(list, maincontext, null, null, null);
             return true;
         }
         return false;
     }
     
 	//Launch URL user selected and display dialog if more than one choice
-	public static void launchhelper( String[] s , final Activity a, final Dialog previousdialog) {
+	public static void launchhelper( String[] s , final Activity a, final Dialog previousdialog, final String station, final String logo) {
 		//TODO Let users select which link they want to play
 		String TAG = "launchhelper";
 		Log.i(TAG, "START" );
@@ -479,23 +483,35 @@ public class SearchStationTab extends Activity implements Runnable {
         				bitrate = new Integer(temp).intValue();
         			}
         			
-                    i = new Intent(Intent.ACTION_VIEW, uri, a, com.webeclubbin.mynpr.PlayListTab.class  );
+        			i = new Intent(MyNPR.tPLAY);
+
+        			i.putExtra(PlayListTab.URL, uri.toString());
+                    i.putExtra(PlayListTab.STATION, station);
+                    i.putExtra(PlayListTab.LOGO, logo);
                     
+                    Uri u = i.getData();
+                    if ( u == null){
+                    	Log.e(TAG, "uri null");
+                    } else {
+                    	Log.v(TAG, "uri okay: " + u.toString());
+                    	
+                    }
+                    Log.v(TAG, "mime type: " + i.getType());
                     //launch intent
                     Log.i(TAG, "Launch Playlist Tab");
-                    //previousdialog.dismiss();
-                    //a.startActivity(i);
-        			
+                    previousdialog.dismiss();
+
         			//StreamingMediaPlayer audioStreamer = new StreamingMediaPlayer(a);
             		//audioStreamer.startStreaming(playthis,bitrate);
                     
                     MyNPR parent = (MyNPR) a.getParent();
+                    
+                    Log.i(TAG, "Switch to playlist tab");
                     parent.tabHost.setCurrentTabByTag(MyNPR.tPLAY);
-                    View playtabview = parent.tabHost.getCurrentView();
-
-                    TextView t = (TextView) playtabview.findViewById(com.webeclubbin.mynpr.R.id.playingcontent);
-                    t.setText(playthis);
-            		
+                    
+                    Log.i(TAG, "Broadcast playlist intent");
+                    a.sendBroadcast (i) ;
+                     
         		} else {
 
                 	uri = Uri.parse( playthis );
@@ -546,7 +562,7 @@ public class SearchStationTab extends Activity implements Runnable {
 					} else if ( (r.length == 1) && (! r[0].toLowerCase().endsWith(PLS)) && (! r[0].toLowerCase().endsWith(M3U)) ) {
 						Log.i(TAG, "Found One" );
 						
-						launchhelper(r, a, d);
+						launchhelper(r, a, d, station, logo);
 						/*playthis = r[0];
 						uri = Uri.parse( playthis );
 						i = new Intent(Intent.ACTION_VIEW); 
@@ -573,7 +589,7 @@ public class SearchStationTab extends Activity implements Runnable {
 					} else {
 						Log.i(TAG, "Found Several or a list: " );
 						//Let users select which link they want to play
-						launchhelper(r, a, d);
+						launchhelper(r, a, d, station, logo);
 					}
 				}
 			});

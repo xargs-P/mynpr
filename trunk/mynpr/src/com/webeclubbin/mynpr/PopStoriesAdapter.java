@@ -48,7 +48,6 @@ public class PopStoriesAdapter extends ArrayAdapter<String> {
             
             Log.i(TAG, "image " + Integer.toString(position) + " " + image[position] );
             Bitmap b = im.getImageBitmap( image[position] );
-            //Bitmap b = com.webeclubbin.mynpr.MyNPR.getImageBitmap( image[position] );
             icon.setImageBitmap( b );
         }  else {
         	icon.setImageBitmap( null );
@@ -56,9 +55,5 @@ public class PopStoriesAdapter extends ArrayAdapter<String> {
 
         return(row); 
     }
-	
-	/*public ImageHelper getImageHelper(){
-		return im;
-	}*/
 	
 }
