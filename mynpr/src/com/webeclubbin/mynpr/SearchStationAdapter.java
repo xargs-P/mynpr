@@ -98,7 +98,7 @@ public class SearchStationAdapter extends ArrayAdapter<Station> {
                         aurls));
                 	lv.setOnItemClickListener(new OnItemClickListener() {
                         public void onItemClick(AdapterView parent, View v, int position, long id) {
-                        	onItemClickHelper(v, position, act, dialog);
+                        	onItemClickHelper(v, position, act, dialog , s.getName(), s.getLogo() );
                         }
                     });
                 
@@ -132,7 +132,7 @@ public class SearchStationAdapter extends ArrayAdapter<Station> {
                 	
                 	lv.setOnItemClickListener(new OnItemClickListener() {
                         public void onItemClick(AdapterView parent, View v, int position, long id) {
-                        	onItemClickHelper(v, position, act, dialog);
+                        	onItemClickHelper(v, position, act, dialog , s.getName(), s.getLogo() );
                         }
                     });
                 
@@ -166,7 +166,7 @@ public class SearchStationAdapter extends ArrayAdapter<Station> {
                 	
                 	lv.setOnItemClickListener(new OnItemClickListener() {
                         public void onItemClick(AdapterView parent, View v, int position, long id) {
-                        	onItemClickHelper(v, position, act, dialog);
+                        	onItemClickHelper(v, position, act, dialog , s.getName(), s.getLogo() );
                         }
                     });
                 
@@ -188,7 +188,7 @@ public class SearchStationAdapter extends ArrayAdapter<Station> {
     }
 	
 	//Setup Click listeners and dialogs if we need to.
-	public void onItemClickHelper(View v, int position, Activity a, final Dialog d) {
+	public void onItemClickHelper(View v, int position, Activity a, final Dialog d, String stationname, String logo) {
         Uri uri = null;
         Intent i = null;
         String TAG = "SearchStationApdapter - onItemClickHelper";
@@ -214,12 +214,12 @@ public class SearchStationAdapter extends ArrayAdapter<Station> {
     	} else if (r.length == 1) {
             //launch intent
             Log.i(TAG, "Position:" + position + " url " + t.getText().toString() + " Got this url out of it " + r[0]  );
-            SearchStationTab.launchhelper(r, a, d);
+            SearchStationTab.launchhelper(r, a, d, stationname, logo);
             
     	} else {
     		//Let users select which link they want to play
     		Log.i(TAG, "Multiple selections for audio" );
-    		SearchStationTab.launchhelper(r, a, d);
+    		SearchStationTab.launchhelper(r, a, d, stationname, logo);
     	}
 	}
 
