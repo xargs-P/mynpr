@@ -1,45 +1,189 @@
 package com.webeclubbin.mynpr;
 
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Set;
 import java.util.Vector;
+import java.util.regex.Pattern;
+
+import android.app.Activity;
+import android.content.Context;
+import android.util.Log;
 
 //Holds the playlist information
 public class PlayList {
 
 	private HashMap<String, Vector<String> > plist = new HashMap<String, Vector<String> >();
 	private HashMap<String, String> logos = new HashMap<String, String>();
+	private String TAG = "PlayList";
+	private final String playlistfile = "playlist";
+	private final String SPLITTERAUDIO = "<MYNPR>";
+	private final String SPLITTERSTATION = "[MYNPR]";
+	private Activity context = null;
+	
+	PlayList(Activity context) {
+        Log.i(TAG, "Constructor PlayList");
+        this.context = context;
+    } 
 	
 	//Add audio url
-	public void addurl(String station, String url){
+	public void addUrl(String station, String url){
+		Log.i(TAG, "addUrl: " + station);
 		
 		if ( plist.containsKey(station) ) {
+			Log.i(TAG, "add url, station already here");
 			Vector<String> v = (Vector<String>) plist.get(station);
 			v.add(url);
 			plist.put(station, v);
+			
 		} else {
+			Log.i(TAG, "add station and url");
 			Vector<String> v = new Vector<String>(); 
 			v.add(url);
 			plist.put(station, v);
+			
 		}
 	}
 	
 	//Add station to logo
-	public void addstation(String station, String logo){
+	public void addStation(String station, String logo){
+		Log.i(TAG, "AddStation");
 		logos.put(station,logo);
 	}
 	
 	//Get Stations
 	public String[] getStations(){
+		Log.i(TAG, "getStations");
 		Set<String> s = plist.keySet();
 		String[] t = {""} ;
+		Log.i(TAG, "Number of Stations: " + s.toArray(t).length);
 		return s.toArray(t);
 	}
 	
-	//Grab audio urls
-	public String[] geturls(String station){
-		Vector<String> urls = (Vector<String>) plist.get(station);
+	/*public String getStation(String url){
+		//There is probably a better/faster way to do this. But since the list should be small it should be okay. ????
+		Iterator<Entry<String, Vector<String>>> it = plist.entrySet().iterator();
+		//Loop through data and save for later
+		Set<Entry<String, Vector<String>>> s = plist.entrySet();
+		Map.Entry<String, Vector<String>>[] t;
+		Map.Entry<String, Vector<String>>[] me = s.toArray( t );
 		String[] t = {""} ;
-		return urls.toArray(t);
+		return s.toArray(t);
+	}*/
+	
+	//Get Logos
+	public String[] getLogos(){
+		Log.i(TAG, "getLogos");
+		Collection<String> v = logos.values();
+		String[] t = {""} ;
+		return v.toArray(t);
 	}
+	
+	//Get Logo
+	public String getLogo(String station){
+		Log.i(TAG, "getLogo");
+		return logos.get(station);
+	}
+	
+	//Grab audio urls
+	public String[] getUrls(String station){
+		Log.i(TAG, "get urls for station: " + station);
+		Vector<String> urls = (Vector<String>) plist.get(station);
+		if (urls != null){
+			Log.i(TAG, "urls : " + urls.size());
+			String[] t = {""} ;
+			return urls.toArray(t);
+		} else {
+			return null;
+		}
+	}
+	
+	//Grab all audio urls 
+	/*public String[] getAllurls(){
+		Collection<Vector<String>> v = plist.values();
+		String[] t = {""} ;
+		return v.toArray(t);
+	}*/
+	
+	//Load data from file
+	public boolean loadfromfile(){
+		try {
+    		FileInputStream fis = context.openFileInput(playlistfile);
+    		if (fis == null){
+    			Log.e(TAG, "No playlist file to open");
+    			return false;
+    		}
+    		DataInputStream in = new DataInputStream(fis);
+            BufferedReader br = new BufferedReader(new InputStreamReader(in));
+            
+            String strLine;
+            Log.i(TAG,"loop through file");
+            //Read File Line By Line
+            while ((strLine = br.readLine()) != null)   {
+            	
+            	String [] s = Pattern.compile(SPLITTERAUDIO).split(strLine);
+            	if ( strLine.contains(SPLITTERAUDIO) ) {
+            		addUrl(s[0], s[1]);
+            	} else if ( strLine.contains(SPLITTERSTATION) ) {
+            		addStation(s[0], s[1]);
+            	}
+            	
+            }
+            br.close();
+            in.close();
+            fis.close();
+    		
+    	} catch (IOException ioe) {
+    		Log.e(TAG, "Can't read file " + ioe.getMessage() );
+    	}
+    	return true;
+	}
+	
+	//Save data to file
+	public boolean savetofile(){
+		try {
+    		FileOutputStream fos = context.openFileOutput(playlistfile, Context.MODE_PRIVATE);
+    		if (fos == null){
+    			Log.e(TAG, "No playlist file to open");
+    			return false;
+    		}
+    		DataOutputStream out = new DataOutputStream(fos);
+            BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(out));
+            
+            Log.i(TAG,"loop through file");
+            String [] s = getStations();
+            //Read File Line By Line
+            for (int i = 0; i <  s.length; i++)   {
+            	String strLine = s[i] + SPLITTERSTATION + logos.get(s[i]);
+            	bw.write(strLine);
+            	bw.newLine();
+            	
+            	String [] a = getUrls(s[i]);
+            	for (int y = 0; i <  a.length; i++) {
+            		strLine = s[i] + SPLITTERAUDIO + a[y];
+            		bw.write(strLine);
+            		bw.newLine();
+            	}
+
+            }
+            bw.close();
+            out.close();
+            fos.close();
+    		
+    	} catch (IOException ioe) {
+    		Log.e(TAG, "Problem writing to file " + ioe.getMessage() );
+    	}
+    	return true;
+	}
+	
+	
 }

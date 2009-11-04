@@ -38,6 +38,7 @@ public class StreamingMediaPlayer {
 	private Context context;
 	private int counter = 0;
 	private int playedcounter = 0;
+	//TODO should convert to Stack obect instead of Vector
 	private Vector<MediaPlayer> mediaplayers = new Vector<MediaPlayer>(3);
 	private boolean started = false; 
 

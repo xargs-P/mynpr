@@ -1,18 +1,12 @@
 package com.webeclubbin.mynpr;
 
-import java.io.BufferedReader;
-import java.io.DataInputStream;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStreamReader;
+import java.util.Set;
 
 import android.app.Activity;
-import android.app.ProgressDialog;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
@@ -23,11 +17,9 @@ import android.view.View;
 import android.view.View.OnClickListener;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
-import android.widget.AdapterView;
 import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.TextView;
-import android.widget.AdapterView.OnItemClickListener;
 
 public class PlayListTab extends Activity implements Runnable {
 	private ListView lv = null;
@@ -38,23 +30,26 @@ public class PlayListTab extends Activity implements Runnable {
 	final static public String URL = "URL";
 	
 	private IntentFilter ourintentfilter ; 
-	private ProgressDialog dialog = null;
-	private PlayList playlist = null;
+	//private ProgressDialog dialog = null;
+	private PlayList playlist = new PlayList(this);
 	private Activity maincontext = null;
-	private String popstorydate = null;
-	private boolean updatepopstories = true;
+	//private String popstorydate = null;
+	private boolean updatescreen = true;
 	private ImageHelper ih = null;
 
 	private final String POPSTORYLISTVIEW = "POPSTORYLISTVIEW";
-	private final String POPDATE = "POPDATE";
-	private final String IMAGES = "IMAGES";
+	//private final String POPDATE = "POPDATE";
+	//private final String IMAGES = "IMAGES";
 	
-	private final String playlistfile = "playlist";
+	//private final String playlistfile = "playlist";
 
 	private Thread thread = null;
 	private ImageView spinner,npr,button_playstatus = null;
  
 	private final int MENU_REFRESH_POPSTORIES = 0;
+	private final String IMAGES = "IMAGES";
+	//private final String SPLITTERAUDIO = "<MYNPR>";
+	//private final String SPLITTERSTATION = "[MYNPR]";
 	
     private BroadcastReceiver playListReceiver = new BroadcastReceiver() {
 	        @Override
@@ -71,6 +66,10 @@ public class PlayListTab extends Activity implements Runnable {
 		  	        station.setText(intent.getStringExtra(STATION) + ": ");   
 		  	        TextView content = (TextView) findViewById(com.webeclubbin.mynpr.R.id.playingcontent);
 		  	        content.setText(intent.getStringExtra(URL)); 
+		  	        
+		  	        playlist.addStation(intent.getStringExtra(STATION), intent.getStringExtra(LOGO));
+		  	        playlist.addUrl(intent.getStringExtra(STATION), intent.getStringExtra(URL));
+		  	        updatescreen();
 		  	        //Scroller s = new Scroller(context , new AnticipateOvershootInterpolator (0) );
 		  	        //content.setScroller(s);
 	        }
@@ -94,7 +93,7 @@ public class PlayListTab extends Activity implements Runnable {
         button_playstatus = (ImageView) findViewById(com.webeclubbin.mynpr.R.id.playstatus);
   		lv = (ListView) findViewById(com.webeclubbin.mynpr.R.id.playlist);
         
-        lv.setOnItemClickListener(new OnItemClickListener() {
+        /*lv.setOnItemClickListener(new OnItemClickListener() {
             public void onItemClick(AdapterView parent, View v, int position, long id) {
                 Uri uri = null;
                 Intent i = null;
@@ -113,7 +112,7 @@ public class PlayListTab extends Activity implements Runnable {
                 startActivity(i);
             	
             }
-        });
+        });*/
 
         button_playstatus.setOnClickListener(new OnClickListener() {
      	   public void onClick(View v) {
@@ -131,27 +130,19 @@ public class PlayListTab extends Activity implements Runnable {
         }); 
         
         //Setup any saved views
-        /*if (savedInstanceState == null){
+        if (savedInstanceState == null){
         	Log.i(TAG, "Bundle savedInstanceState is null.");
         	
          	
-    		MyNPR parent = (MyNPR) getParent(); 
-    		Log.i(TAG, "Parent| bundle null? " + parent.isbundlenull() );
-        	if ( parent.isbundlenull()  ) {
-        		Log.i(TAG, "Set up Dialog box ");
-        		dialog = new ProgressDialog(this);
-        		dialog.setIndeterminate(true);
-        		dialog.setCancelable(true); 
-        		dialog.setTitle("One Moment...");
-    		
-        		if (updatepopstories == true){	
-        			dialog.setMessage("Grabbing stories from npr.org...");	
-        		}
-        		dialog.show();
-        	} else { 
-        		Log.i(TAG, "Skip setting up Dialog box");
-        	} 
-    		
+    		if (playlist.loadfromfile()) {
+    			Log.i(TAG, "Loaded playlist");
+    		} else {
+    			Log.e(TAG, "Could noy Load playlist");
+    		}
+    		final Animation rotate = AnimationUtils.loadAnimation(PlayListTab.this, R.anim.rotate);
+    		spinner = (ImageView) findViewById(R.id.process); 
+    		spinner.startAnimation(rotate);
+  		   
     		thread = new Thread(this);
     		thread.start();
         } else {
@@ -167,12 +158,12 @@ public class PlayListTab extends Activity implements Runnable {
         	for(int i=0; i< bundlesize ; i++){
         		Log.i(TAG, "Bundle contents: " + ourstrings[i]);
         	}
-        	byte[] b = savedInstanceState.getByteArray(POPSTORYLISTVIEW);
-        	popstorydate = savedInstanceState.getString(POPDATE);
+        	//byte[] b = savedInstanceState.getByteArray(POPSTORYLISTVIEW);
+        	
         	ih = new ImageHelper(maincontext);
         	ih.setImageStorage(savedInstanceState.getStringArray(IMAGES));
         	
-        	if ( b != null ) {
+        	/*if ( b != null ) {
         		try {     	    
         	        // Deserialize from a byte array
         			Log.i(TAG, "Deserialize objects from saved Bundle");
@@ -188,66 +179,54 @@ public class PlayListTab extends Activity implements Runnable {
         	    } catch (IOException e) {
         	    	Log.e(TAG, e.toString());
         	    }
-        	}
+        	}*/
 
-        }*/
+        }
 
     }
  
-    
+    //Thread process for grabbing data
     public void run() {	
-    		lvplaylist = grabdata_playlist();
+    		
+    		playlist = grabdata_playlist();
     		handler.sendEmptyMessage(0);
     }
     
     private Handler handler = new Handler() {
         @Override
         public void handleMessage(Message msg) {      
-        		updatepopscreen();
-        		
-        		if ( dialog != null) {
-        			if ( dialog.isShowing() ){
-        				dialog.cancel();
-        			}
-        		}
-        		
-        		if (spinner != null && npr != null) {
+        		updatescreen();
+        		    		
+        		if (spinner != null ) {
         			if (spinner.getAnimation() != null){
         				spinner.clearAnimation();
-        			}
-        			if (npr.getAnimation() != null){
-        				npr.clearAnimation();
-        			}
-        			
+        			}        			
         		}
         }
     };
 	
-    private void updatepopscreen(){
-		String [] title = null; 
-		String [] image = null;
+    private void updatescreen(){
 
-		title = lvpopstories[0];
-		image = lvpopstories[1];
-
-		String TAG = "updatepopscreen";
+		String TAG = "updatescreen - Playlist";
 
 		Log.i(TAG, "ENTER");
 		if ( ih == null ){
 			ih = new ImageHelper(maincontext);
-			ih.setImageStorage(image);
-		} else if (updatepopstories == true) {
-			ih.setImageStorage(image);
+			ih.setImageStorage(playlist.getLogos());
+		} else if (updatescreen == true) {
+			ih.setImageStorage(playlist.getLogos());
 		}
 
-		lv.setAdapter( new PopStoriesAdapter(maincontext,
-				com.webeclubbin.mynpr.R.layout.popstoryrow, 
-				title, image, ih) );
+		if (playlist.getStations() != null){
+			//TODO sort adapter
+			lv.setAdapter( new PlayListAdapter(maincontext,
+					com.webeclubbin.mynpr.R.layout.playlistrow, 
+					playlist, ih) );
+		} else {
+			Log.i(TAG, "No stations to display");
+		}
 		
-		//Set date on view
-		TextView poprefresh = (TextView) findViewById(com.webeclubbin.mynpr.R.id.poprefresh);
-		poprefresh.setText("Refreshed " + popstorydate );
-		
+
     	//Tell UI to update our list
 		Log.i(TAG, "update screen");
     	lv.invalidate();
@@ -257,31 +236,40 @@ public class PlayListTab extends Activity implements Runnable {
     private PlayList grabdata_playlist() {
 
     	String TAG = "grabdata - Playlist";
+    	PlayList p = new PlayList(this);
+    	if (p.loadfromfile()){
+    		Log.i(TAG, "Loaded file");    	
+    	} else {
+    		Log.e(TAG, "Could not Load file");
+    	}
     	
-    	try {
+    	/*try {
     		FileInputStream fis = openFileInput(playlistfile);
     		if (fis == null){
+    			Log.i(TAG, "No playlist file to open");
     			return null;
     		}
     		DataInputStream in = new DataInputStream(fis);
             BufferedReader br = new BufferedReader(new InputStreamReader(in));
             String strLine;
+            Log.i(TAG,"loop through file");
             //Read File Line By Line
             while ((strLine = br.readLine()) != null)   {
             	// Print the content on the console
-            	System.out.println (strLine);
+            	
+            	String [] s = Pattern.compile(SPLITTERAUDIO).split(strLine);
+            	if ( strLine.contains(SPLITTERAUDIO) ) {
+            		p.addUrl(s[0], s[1]);
+            	} else if ( strLine.contains(SPLITTERSTATION) ) {
+            		p.addStation(s[0], s[1]);
+            	}
             }
-    		//Grab text
     		
     	} catch (IOException ioe) {
     		Log.e(TAG, "Invalid XML format?? " + ioe.getMessage() );
-    	}
+    	}*/
     	
-    	saxelapsedTimeMillis = (System.currentTimeMillis() - saxstart ) / 1000;
-    	Log.i("SAX - TIMER", "Time it took in seconds:" + Long.toString(saxelapsedTimeMillis));
-    	String [][] r = { myHandler.getTitles() , myHandler.getImages(), myHandler.getLinks() };
-
-    	return r;
+    	return p;
     }
     
 	//Save UI state changes to the instanceState.
