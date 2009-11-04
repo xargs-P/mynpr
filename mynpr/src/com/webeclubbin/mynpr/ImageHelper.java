@@ -22,8 +22,6 @@ import android.util.Log;
 
 public class ImageHelper {
 
-	//Add serial id
-	//private static final long serialVersionUID = 5847599410751380100L;
 	private HashMap<String, Bitmap> imagestorage = new HashMap<String, Bitmap>();
 	private final String PREFIX = "IMAGE";
 	Activity context = null;
@@ -31,7 +29,7 @@ public class ImageHelper {
 	    
 	ImageHelper(Activity c) {
 		context = c;
-        Log.i(TAG, "Create ImageHelper");
+        Log.i(TAG, "Constructor ImageHelper");
     } 
     //Grab image from URL and create bitmap from it
     public Bitmap getImageBitmap(String url) { 
@@ -61,6 +59,9 @@ public class ImageHelper {
     private void processImage (String url) {
     	Bitmap bm = null; 
     	String TAG = "processImage";
+    	if (url == null){
+    		return;
+    	}
     	bm = imagestorage.get(url);
     	if (bm == null) {
     		Log.i(TAG, "See if we can grab image from disk cache. Not in memory: " + url);
