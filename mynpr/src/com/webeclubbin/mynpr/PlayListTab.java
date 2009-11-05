@@ -30,27 +30,20 @@ public class PlayListTab extends Activity implements Runnable {
 	final static public String URL = "URL";
 	
 	private IntentFilter ourintentfilter ; 
-	//private ProgressDialog dialog = null;
+	final private int MENU_LIVE_NPR = 0;
+	private final String NPRLIVEURL = "http://stream.npr.org:8002/listen.pls";
+	
 	private PlayList playlist = new PlayList(this);
 	private Activity maincontext = null;
-	//private String popstorydate = null;
+	
 	private boolean updatescreen = true;
 	private ImageHelper ih = null;
 
-	private final String POPSTORYLISTVIEW = "POPSTORYLISTVIEW";
-	//private final String POPDATE = "POPDATE";
-	//private final String IMAGES = "IMAGES";
-	
-	//private final String playlistfile = "playlist";
-
 	private Thread thread = null;
-	private ImageView spinner,npr,button_playstatus = null;
+	private ImageView spinner,button_playstatus = null;
  
-	private final int MENU_REFRESH_POPSTORIES = 0;
 	private final String IMAGES = "IMAGES";
-	//private final String SPLITTERAUDIO = "<MYNPR>";
-	//private final String SPLITTERSTATION = "[MYNPR]";
-	
+
     private BroadcastReceiver playListReceiver = new BroadcastReceiver() {
 	        @Override
 	        public void onReceive(Context context, Intent intent) {
@@ -133,12 +126,6 @@ public class PlayListTab extends Activity implements Runnable {
         if (savedInstanceState == null){
         	Log.i(TAG, "Bundle savedInstanceState is null.");
         	
-         	
-    		if (playlist.loadfromfile()) {
-    			Log.i(TAG, "Loaded playlist");
-    		} else {
-    			Log.e(TAG, "Could noy Load playlist");
-    		}
     		final Animation rotate = AnimationUtils.loadAnimation(PlayListTab.this, R.anim.rotate);
     		spinner = (ImageView) findViewById(R.id.process); 
     		spinner.startAnimation(rotate);
@@ -273,13 +260,18 @@ public class PlayListTab extends Activity implements Runnable {
     }
     
 	//Save UI state changes to the instanceState.
-    /*@Override
+    @Override
     public void onSaveInstanceState(Bundle instanceState) {
-    	String TAG = "onSaveInstanceState - PopStoryTab";
+    	String TAG = "onSaveInstanceState - PlayListTab";
 
     	Log.i(TAG, "START");
+    	
+    	if (! playlist.isSaved()){
+    		Log.i(TAG, "Save playlist");
+    		playlist.savetofile();
+    	}
     	//Store station list view
-    	byte[] bufOfStations = null;
+    	/*byte[] bufOfStations = null;
 
     	try {
     		// Serialize to a byte array - Stations
@@ -299,15 +291,15 @@ public class PlayListTab extends Activity implements Runnable {
         Log.i(TAG, "Saving Update Time");
         instanceState.putString(POPDATE, popstorydate);
         Log.i(TAG, "Saving Image Urls");
-        instanceState.putStringArray(IMAGES, ih.getUrls() );
+        instanceState.putStringArray(IMAGES, ih.getUrls() );*/
 
     	super.onSaveInstanceState(instanceState);
-    }*/
+    }
     
     /** Set up Menu for this Tab */
     @Override
     public boolean onCreateOptionsMenu (Menu menu) {
-    	menu.add(0, MENU_REFRESH_POPSTORIES, Menu.NONE, "Refresh Stories").setIcon(com.webeclubbin.mynpr.R.drawable.icon);;
+    	menu.add(0, MENU_LIVE_NPR, Menu.NONE, "Launch NPR.org Live Stream").setIcon(com.webeclubbin.mynpr.R.drawable.npr2);;
         return true;
     }
     
@@ -315,8 +307,9 @@ public class PlayListTab extends Activity implements Runnable {
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         switch (item.getItemId()) {
-        case MENU_REFRESH_POPSTORIES:
-        	button_playstatus.performClick();
+        case MENU_LIVE_NPR:
+        	String [] list = SearchStationTab.parsePLS(NPRLIVEURL, maincontext);
+        	SearchStationTab.launchhelper(list, maincontext, null, null, null);
             return true;
         }
         return false;
