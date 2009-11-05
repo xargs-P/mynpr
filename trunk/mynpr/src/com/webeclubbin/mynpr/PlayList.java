@@ -27,8 +27,9 @@ public class PlayList {
 	private String TAG = "PlayList";
 	private final String playlistfile = "playlist";
 	private final String SPLITTERAUDIO = "<MYNPR>";
-	private final String SPLITTERSTATION = "[MYNPR]";
+	private final String SPLITTERSTATION = "#MYNPR#";
 	private Activity context = null;
+	private boolean saved = true;
 	
 	PlayList(Activity context) {
         Log.i(TAG, "Constructor PlayList");
@@ -52,12 +53,19 @@ public class PlayList {
 			plist.put(station, v);
 			
 		}
+		saved = false;
+	}
+	
+	//Is the data saved to disk?
+	public boolean isSaved(){
+		return saved;
 	}
 	
 	//Add station to logo
 	public void addStation(String station, String logo){
-		Log.i(TAG, "AddStation");
+		Log.i(TAG, "AddStation: " + station);
 		logos.put(station,logo);
+		saved = false;
 	}
 	
 	//Get Stations
@@ -129,11 +137,12 @@ public class PlayList {
             Log.i(TAG,"loop through file");
             //Read File Line By Line
             while ((strLine = br.readLine()) != null)   {
-            	
-            	String [] s = Pattern.compile(SPLITTERAUDIO).split(strLine);
+            	Log.i(TAG,strLine);
             	if ( strLine.contains(SPLITTERAUDIO) ) {
+            		String [] s = Pattern.compile(SPLITTERAUDIO).split(strLine);
             		addUrl(s[0], s[1]);
             	} else if ( strLine.contains(SPLITTERSTATION) ) {
+            		String [] s = Pattern.compile(SPLITTERSTATION).split(strLine);
             		addStation(s[0], s[1]);
             	}
             	
@@ -168,7 +177,7 @@ public class PlayList {
             	bw.newLine();
             	
             	String [] a = getUrls(s[i]);
-            	for (int y = 0; i <  a.length; i++) {
+            	for (int y = 0; y <  a.length; y++) {
             		strLine = s[i] + SPLITTERAUDIO + a[y];
             		bw.write(strLine);
             		bw.newLine();
@@ -182,6 +191,7 @@ public class PlayList {
     	} catch (IOException ioe) {
     		Log.e(TAG, "Problem writing to file " + ioe.getMessage() );
     	}
+    	saved = true;
     	return true;
 	}
 	

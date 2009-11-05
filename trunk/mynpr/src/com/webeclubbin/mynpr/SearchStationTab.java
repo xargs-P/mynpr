@@ -65,7 +65,7 @@ public class SearchStationTab extends Activity implements Runnable {
 	
 	private String searchstationurl = "http://api.npr.org/stations.php?apiKey=" ;
 	private String searchstationurlwhole = "";
-	private final String nprliveurl = "http://stream.npr.org:8002/listen.pls";
+	//private final String nprliveurl = "http://stream.npr.org:8002/listen.pls";
 	final String STATIONLISTVIEW = "STATIONLISTVIEW";
 	final String HIDESEARCH = "HIDESEARCH";
 
@@ -76,7 +76,7 @@ public class SearchStationTab extends Activity implements Runnable {
 	final static String PLS = ".pls";
     final static String M3U = ".m3u";
 	
-	final private int MENU_LIVE_NPR = 0;
+	//final private int MENU_LIVE_NPR = 0;
 	
 	final static public String BITERATE_HEADER =  "icy-br";
 	//final static public String AUDIO_MIME =  "audio/mpeg";
@@ -434,14 +434,14 @@ public class SearchStationTab extends Activity implements Runnable {
     }
     
     /** Set up Menu for this Tab */
-    @Override
+    /*@Override
     public boolean onCreateOptionsMenu (Menu menu) {
     	menu.add(0, MENU_LIVE_NPR, Menu.NONE, "Launch NPR.org Live Stream").setIcon(com.webeclubbin.mynpr.R.drawable.npr2);;
         return true;
-    }
+    }*/
     
     /* Handles item selections */
-    @Override
+    /*@Override
     public boolean onOptionsItemSelected(MenuItem item) {
         switch (item.getItemId()) {
         case MENU_LIVE_NPR:
@@ -450,7 +450,7 @@ public class SearchStationTab extends Activity implements Runnable {
             return true;
         }
         return false;
-    }
+    }*/
     
 	//Launch URL user selected and display dialog if more than one choice
 	public static void launchhelper( String[] s , final Activity a, final Dialog previousdialog, final String station, final String logo) {

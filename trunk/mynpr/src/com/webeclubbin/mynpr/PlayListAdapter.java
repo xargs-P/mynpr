@@ -5,14 +5,18 @@ package com.webeclubbin.mynpr;
 import java.util.Comparator;
 
 import android.app.Activity;
+import android.app.Dialog;
 import android.graphics.Bitmap;
 import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.ListView;
 import android.widget.TextView;
+import android.widget.AdapterView.OnItemClickListener;
 
 public class PlayListAdapter extends ArrayAdapter<String> {
 
@@ -56,6 +60,17 @@ public class PlayListAdapter extends ArrayAdapter<String> {
         	for (int i = 0; i < urls.length; i++) { 
         		TextView audiourl = (TextView) View.inflate(context, com.webeclubbin.mynpr.R.layout.audiolink, null);
         		audiourl.setText(urls[i]);
+        		
+        		audiourl.setOnClickListener(new View.OnClickListener() {
+                    public void onClick( View v ) {
+                        String TAG = "OnClickListener:" ;
+                        TextView t = (TextView) v;
+                        Log.i(TAG, t.getText().toString() );
+                        Log.i(TAG, "launch audio");
+
+                    }
+                });
+        		
         		row.addView(audiourl);
         	}
         	
@@ -66,6 +81,12 @@ public class PlayListAdapter extends ArrayAdapter<String> {
                 logo.setImageBitmap( b );
             } else {
             	logo.setImageBitmap( null );
+            	/*
+            	 * Log.i(TAG, "set name"); 
+            	TextView label=(TextView)row.findViewById(com.webeclubbin.mynpr.R.id.stationname);
+                label.setText(s.getName());
+                label.setVisibility(View.VISIBLE);
+            	 */
             }
         } else {
         	row = new LinearLayout(context);
