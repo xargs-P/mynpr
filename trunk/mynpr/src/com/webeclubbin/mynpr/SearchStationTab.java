@@ -78,7 +78,7 @@ public class SearchStationTab extends Activity implements Runnable {
 	
 	//final private int MENU_LIVE_NPR = 0;
 	
-	final static public String BITERATE_HEADER =  "icy-br";
+	//final static public String BITERATE_HEADER =  "icy-br";
 	//final static public String AUDIO_MIME =  "audio/mpeg";
 
     /** Called when the activity is first created. */
@@ -475,13 +475,7 @@ public class SearchStationTab extends Activity implements Runnable {
         		urlConn = (HttpURLConnection)url.openConnection();
         		//See if this is a type we can handle
         		Log.i(TAG, "Content Type: " + urlConn.getContentType () );
-        		if (urlConn.getContentType ().toLowerCase().contains(PlayListTab.AUDIO_MIME)){
-        			int bitrate = 56;
-        			String temp = urlConn.getHeaderField(BITERATE_HEADER);
-        			Log.i(TAG, "Bitrate: " + temp );
-        			if (temp != null){
-        				bitrate = new Integer(temp).intValue();
-        			}
+        		if (urlConn.getContentType ().toLowerCase().contains(StreamingMediaPlayer.AUDIO_MIME)){
         			
         			i = new Intent(MyNPR.tPLAY);
 

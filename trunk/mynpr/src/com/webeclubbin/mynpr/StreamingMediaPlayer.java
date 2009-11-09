@@ -11,14 +11,20 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLConnection;
 import java.util.Vector;
 
+import android.app.Activity;
 import android.content.Context;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
 import android.util.Log;
+import android.view.animation.Animation;
+import android.view.animation.AnimationUtils;
+import android.widget.ImageButton;
+import android.widget.ImageView;
 
 /**
  * MediaPlayer does not yet support streaming from external URLs so this class provides a pseudo-streaming function
@@ -26,6 +32,8 @@ import android.util.Log;
  */
 public class StreamingMediaPlayer {
 
+	final static public String AUDIO_MIME =  "audio/mpeg";
+	final static public String BITERATE_HEADER =  "icy-br";
     private int INTIAL_KB_BUFFER ;
     private int BIT = 8 ;
     private int SECONDS = 30 ;
@@ -38,22 +46,49 @@ public class StreamingMediaPlayer {
 	private Context context;
 	private int counter = 0;
 	private int playedcounter = 0;
-	//TODO should convert to Stack obect instead of Vector
+	//TODO should convert to Stack object instead of Vector
 	private Vector<MediaPlayer> mediaplayers = new Vector<MediaPlayer>(3);
 	private boolean started = false; 
+	private InputStream stream = null;
 
  	public StreamingMediaPlayer(Context c) 
  	{
  		context = c;
  		downloadingMediaFile = new File(context.getCacheDir(),DOWNFILE + counter);
+ 		downloadingMediaFile.deleteOnExit();
 	}
 	
     /**  
      * Progressivly download the media to a temporary location and update the MediaPlayer as new content becomes available.
      */  
-    public void startStreaming(final String mediaUrl, int bitrate) throws IOException {
+    public void startStreaming(final String mediaUrl) throws IOException {
     	
     	final String TAG = "startStreaming";
+    	
+    	URL url;
+        URLConnection urlConn = null;
+        int bitrate = 56;
+
+    	try {
+    		url = new URL(mediaUrl);
+    		urlConn = (HttpURLConnection)url.openConnection();
+    		//See if this is a type we can handle
+    		Log.i(TAG, "Content Type: " + urlConn.getContentType () );
+    		if (urlConn.getContentType ().toLowerCase().contains(AUDIO_MIME)){
+    			
+    			String temp = urlConn.getHeaderField(BITERATE_HEADER);
+    			Log.i(TAG, "Bitrate: " + temp );
+    			if (temp != null){
+    				bitrate = new Integer(temp).intValue();
+    			}
+    		} else {
+    			Log.e(TAG, "Can not open media type");
+    			//TODO Add toast message here.
+    		}
+    	} catch (IOException ioe) {
+    		Log.e( TAG, "Could not connect to " +  mediaUrl );
+    	} 
+    	
     	//Set up buffer size
     	//Assume XX kbps * XX seconds / 8 bits per byte
     	INTIAL_KB_BUFFER =  bitrate * SECONDS / BIT;
@@ -63,7 +98,8 @@ public class StreamingMediaPlayer {
 	            try {   
 	        		downloadAudioIncrement(mediaUrl);
 	            } catch (IOException e) {
-	            	Log.e(TAG, "Unable to initialize the MediaPlayer for fileUrl=" + mediaUrl, e);
+	            	Log.e(TAG, "Unable to initialize the MediaPlayer for Audio Url = " + mediaUrl, e);
+	            	stop();
 	            	return;
 	            }   
 	        }   
@@ -80,7 +116,7 @@ public class StreamingMediaPlayer {
 
     	URLConnection cn = new URL(mediaUrl).openConnection(); 
         cn.connect();   
-        InputStream stream = cn.getInputStream();
+        stream = cn.getInputStream();
         if (stream == null) {
         	Log.e(TAG, "Unable to create InputStream for mediaUrl: " + mediaUrl);
         }
@@ -89,12 +125,13 @@ public class StreamingMediaPlayer {
 		BufferedOutputStream bout = new BufferedOutputStream ( new FileOutputStream(downloadingMediaFile), 32 * 1024 );   
         byte buf[] = new byte[16 * 1024];
         int totalBytesRead = 0, incrementalBytesRead = 0;
-        boolean stop = false;
+        //boolean stop = false;
         do {
         	if (bout == null) {
         		counter++;
         		Log.i(TAG, "FileOutputStream is null, Create new one: " + DOWNFILE + counter);
         		downloadingMediaFile = new File(context.getCacheDir(),DOWNFILE + counter);
+        		downloadingMediaFile.deleteOnExit();
         		bout = new BufferedOutputStream ( new FileOutputStream(downloadingMediaFile) );	
         	}
 
@@ -113,8 +150,8 @@ public class StreamingMediaPlayer {
             }
             
             
-            
-            if ( totalKbRead >= INTIAL_KB_BUFFER && ! stop) {
+            //if ( totalKbRead >= INTIAL_KB_BUFFER && ! stop) {
+            if ( totalKbRead >= INTIAL_KB_BUFFER ) {
             	Log.v(TAG, "Reached Buffer amount we want: " + "totalKbRead: " + totalKbRead + " INTIAL_KB_BUFFER: " + INTIAL_KB_BUFFER);
             	bout.flush();
             	bout.close();
@@ -126,9 +163,8 @@ public class StreamingMediaPlayer {
 
             }
             
-        } while (true);   
+        } while (stream != null);   
 
-       	stream.close();
 
     }  
     
@@ -226,8 +262,34 @@ public class StreamingMediaPlayer {
     	started = true;
     	MediaPlayer mp = mediaplayers.get(0);
     	Log.i(TAG,"Start Player");
-    	mp.start();  
+    	mp.start(); 
+    	Activity a = (Activity) context;
+
+    	ImageView spinner = (ImageView) a.findViewById(R.id.process); 
+		spinner.clearAnimation();
     	
+    }
+    
+    //Stop Audio
+    public void stop(){
+    	String TAG = "STOP";
+    	Log.i(TAG,"Stop Player");
+    	try {
+    		MediaPlayer mp = mediaplayers.get(0);
+    		mp.pause();
+    		stream.close();
+    		stream = null;
+    		Activity a = (Activity) context;
+    		ImageView spinner = (ImageView) a.findViewById(R.id.process); 
+    		spinner.clearAnimation();
+    		ImageButton button_playstatus = (ImageButton) a.findViewById(com.webeclubbin.mynpr.R.id.playstatus);
+    		button_playstatus.setImageResource(com.webeclubbin.mynpr.R.drawable.play);
+			button_playstatus.postInvalidate();
+    	} catch (ArrayIndexOutOfBoundsException e) {
+    		Log.e(TAG, "No items in Vector");
+    	} catch (IOException e) {
+    		Log.e(TAG, "error closing open connection");
+    	}
     }
 
     

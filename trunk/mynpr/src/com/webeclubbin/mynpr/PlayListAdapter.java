@@ -21,13 +21,10 @@ import android.widget.AdapterView.OnItemClickListener;
 public class PlayListAdapter extends ArrayAdapter<String> {
 
 	Activity context;  
-
 	int ourlayoutview;
 	ImageHelper im = null;
 	PlayList playlist = null;
-	
 	String [] stations = null;
-	
 	String TAG = "PlayListAdapter";
 	  
 	PlayListAdapter(Activity context, int ourview, PlayList p, ImageHelper imagehelper) {
@@ -50,7 +47,7 @@ public class PlayListAdapter extends ArrayAdapter<String> {
     }  
 
 	@Override
-    public View getView(int position, View convertView, ViewGroup parent) {  
+    public View getView(final int position, View convertView, ViewGroup parent) {  
          
     	Log.i(TAG,"getView " + stations[position] );
     	LinearLayout  row = (LinearLayout) View.inflate(context, ourlayoutview, null);
@@ -63,10 +60,13 @@ public class PlayListAdapter extends ArrayAdapter<String> {
         		
         		audiourl.setOnClickListener(new View.OnClickListener() {
                     public void onClick( View v ) {
-                        String TAG = "OnClickListener:" ;
+                    	String TAG = "Playlist List Click";
+                        Log.i(TAG, "Grab url and play");
                         TextView t = (TextView) v;
-                        Log.i(TAG, t.getText().toString() );
-                        Log.i(TAG, "launch audio");
+                        String oururl = (String) t.getText();
+                        
+                        PlayListTab p = (PlayListTab) context; 
+                        p.play(stations[position], oururl);
 
                     }
                 });
