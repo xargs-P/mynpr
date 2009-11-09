@@ -1,5 +1,6 @@
 package com.webeclubbin.mynpr;
 
+import java.io.IOException;
 import java.util.Set;
 
 import android.app.Activity;
@@ -17,13 +18,14 @@ import android.view.View;
 import android.view.View.OnClickListener;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
+import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.TextView;
 
 public class PlayListTab extends Activity implements Runnable {
 	private ListView lv = null;
-	final static public String AUDIO_MIME =  "audio/mpeg";
+	//final static public String AUDIO_MIME =  "audio/mpeg";
 	final static public String HTML_MIME =  "html";
 	final static public String STATION = "STATION";
 	final static public String LOGO = "LOGO";
@@ -40,7 +42,11 @@ public class PlayListTab extends Activity implements Runnable {
 	private ImageHelper ih = null;
 
 	private Thread thread = null;
-	private ImageView spinner,button_playstatus = null;
+	private ImageView spinner = null;
+	private ImageButton button_playstatus = null;
+	//private boolean playstatus = false;
+	
+	private StreamingMediaPlayer audioStreamer = null;
  
 	private final String IMAGES = "IMAGES";
 
@@ -55,14 +61,10 @@ public class PlayListTab extends Activity implements Runnable {
 	  	        	Log.i(TAG, "URL " + intent.getStringExtra(URL));
 	  	        	Log.i(TAG, "MIME " + intent.getType());
 
-	        		TextView station = (TextView) findViewById(com.webeclubbin.mynpr.R.id.playingstation);
-		  	        station.setText(intent.getStringExtra(STATION) + ": ");   
-		  	        TextView content = (TextView) findViewById(com.webeclubbin.mynpr.R.id.playingcontent);
-		  	        content.setText(intent.getStringExtra(URL)); 
-		  	        
 		  	        playlist.addStation(intent.getStringExtra(STATION), intent.getStringExtra(LOGO));
 		  	        playlist.addUrl(intent.getStringExtra(STATION), intent.getStringExtra(URL));
 		  	        updatescreen();
+		  	        play( intent.getStringExtra(STATION) ,intent.getStringExtra(URL) );
 		  	        //Scroller s = new Scroller(context , new AnticipateOvershootInterpolator (0) );
 		  	        //content.setScroller(s);
 	        }
@@ -83,42 +85,57 @@ public class PlayListTab extends Activity implements Runnable {
 		Log.i(TAG, "Register IntentFilter");
         registerReceiver (playListReceiver, ourintentfilter);
         
-        button_playstatus = (ImageView) findViewById(com.webeclubbin.mynpr.R.id.playstatus);
+        button_playstatus = (ImageButton) findViewById(com.webeclubbin.mynpr.R.id.playstatus);
   		lv = (ListView) findViewById(com.webeclubbin.mynpr.R.id.playlist);
         
         /*lv.setOnItemClickListener(new OnItemClickListener() {
             public void onItemClick(AdapterView parent, View v, int position, long id) {
-                Uri uri = null;
-                Intent i = null;
-                String oururl = null;
-                String TAG = "Playlist List";
                 
-                //Open Selected stories webpage
-            	String [] link = lvpopstories[2];
-            	oururl = link[position];
-
-            	uri = Uri.parse( oururl );
- 
-                i = new Intent("android.intent.action.VIEW", uri, maincontext, com.webeclubbin.mynpr.HTMLviewer.class  );
-                //launch intent
-                Log.i(TAG, "Position:" + position + " url " + oururl);
-                startActivity(i);
+                String TAG = "Playlist List Click";
+                Log.i(TAG, "Grab url and play");
+                TextView t = (TextView) v;
+                String oururl = (String) t.getText();
+                String[] station = playlist.getStations();
+                play(station[position], oururl);
             	
             }
         });*/
 
         button_playstatus.setOnClickListener(new OnClickListener() {
      	   public void onClick(View v) {
-
-     		   final Animation shrinkspin = AnimationUtils.loadAnimation(PlayListTab.this, R.anim.shrinkspin);
-     		   final Animation rotate = AnimationUtils.loadAnimation(PlayListTab.this, R.anim.rotate);
-     		   //npr = (ImageView) findViewById(R.id.npr);
-     		   spinner = (ImageView) findViewById(R.id.process); 
-     		   spinner.startAnimation(rotate);
-     		   //npr.startAnimation(shrinkspin);
-     		   //updatepopstories = true;
-     		   //thread = new Thread(PlayListTab.this);
-     		   //thread.start();
+     		   String TAG = "PlayStatus - onClick";
+     		   if (audioStreamer != null){
+     			   //Stop audio
+     			   Log.i(TAG, "Stop audio");
+     			   audioStreamer.stop();
+     			   audioStreamer = null;
+     				  
+     			   //button_playstatus.setImageResource(com.webeclubbin.mynpr.R.drawable.play);
+     			   //button_playstatus.postInvalidate();
+     		   } else {
+     			   //play audio
+     			  Log.i(TAG, "Play audio");
+     			   
+     			  TextView station = (TextView) findViewById(com.webeclubbin.mynpr.R.id.playingstation);
+          		  String ourstation = (String) station.getText();   
+          		  TextView content = (TextView) findViewById(com.webeclubbin.mynpr.R.id.playingcontent);
+          		  String audiolink = (String) content.getText();
+          		  
+          		  if ( ! audiolink.equals("") ){
+          			  //final Animation rotate = AnimationUtils.loadAnimation(PlayListTab.this, com.webeclubbin.mynpr.R.anim.rotate);
+          			  //spinner = (ImageView) findViewById(com.webeclubbin.mynpr.R.id.process); 
+          			  //spinner.startAnimation(rotate);
+          		   
+          			  //button_playstatus.setImageResource(com.webeclubbin.mynpr.R.drawable.stop);
+          			  //button_playstatus.postInvalidate();
+            		  play(ourstation, audiolink);
+          		  } else {
+          			Log.i(TAG, "Skip Playing audio. No link to play.");
+          		  }
+          		   
+     		   }
+     		   
+     		   
      	   }
         }); 
         
@@ -191,7 +208,37 @@ public class PlayListTab extends Activity implements Runnable {
         		}
         }
     };
-	
+    
+    //Play audio link
+    public void play(String ourstation, final String audiolink){
+    	final String TAG = "PLAY audio";
+
+    	final Animation rotate = AnimationUtils.loadAnimation(maincontext, R.anim.rotate);
+		spinner = (ImageView) findViewById(R.id.process); 
+		spinner.startAnimation(rotate);
+    	TextView station = (TextView) findViewById(com.webeclubbin.mynpr.R.id.playingstation);
+	    station.setText(ourstation + ": ");   
+	    TextView content = (TextView) findViewById(com.webeclubbin.mynpr.R.id.playingcontent);
+	    content.setText(audiolink); 
+	    
+	    button_playstatus.setImageResource(com.webeclubbin.mynpr.R.drawable.stop);
+		button_playstatus.invalidate();
+	    
+    	Runnable r = new Runnable() {   
+	        public void run() {   
+	        	try {
+	        		audioStreamer = new StreamingMediaPlayer(maincontext);
+	        		audioStreamer.startStreaming(audiolink);
+	        	} catch (IOException e){
+	        		Log.e(TAG, e.toString());
+	        		audioStreamer.stop();
+	        	}
+	        }   
+	    };   
+	    new Thread(r).start();
+	    
+    }
+    
     private void updatescreen(){
 
 		String TAG = "updatescreen - Playlist";
