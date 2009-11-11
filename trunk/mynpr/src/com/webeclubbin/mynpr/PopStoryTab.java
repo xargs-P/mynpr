@@ -70,6 +70,7 @@ public class PopStoryTab extends Activity implements Runnable {
 	private Thread thread = null;
 	private ImageView spinner,npr = null;
 	private TextView button_poprefresh = null;
+	private boolean madeAttempt = false;
 	
 	private final int MENU_REFRESH_POPSTORIES = 0;
 
@@ -242,8 +243,24 @@ public class PopStoryTab extends Activity implements Runnable {
     }
     
     public void run() {	
+    		String TAG = "Thread - Run";
     		lvpopstories = grabdata_popstories(popstoriesurl);
-    		handler.sendEmptyMessage(0);
+    		if (lvpopstories != null){
+    			handler.sendEmptyMessage(0);
+    		} else {
+    			if (madeAttempt == false){
+    				madeAttempt = true;
+    				Log.i(TAG, "Try to redownload again.");
+    				updatepopstories = true;
+    				thread = new Thread(this);
+    				thread.start();
+    			} else {
+    				Log.i(TAG, "We have already tried once. Give up.");
+    				madeAttempt = false;
+    				Toast.makeText(this, "Trouble connecting to npr.org. Try to refresh later.", Toast.LENGTH_LONG).show();
+    			}
+    		}
+    		
     }
     
     private Handler handler = new Handler() {
@@ -320,7 +337,8 @@ public class PopStoryTab extends Activity implements Runnable {
     		try {
     			url = new URL(strURL);
     			urlConn = url.openConnection();
-    			Log.i( TAG, "Got data for SAX");
+    			urlConn.setConnectTimeout(10000);
+    			Log.i( TAG, "Opened connection");
     		} catch (IOException ioe) {
     			Log.e( TAG, "Could not connect to " + strURL );
     		}
@@ -375,7 +393,7 @@ public class PopStoryTab extends Activity implements Runnable {
     	} catch (ParserConfigurationException pce) {
     		Log.e(TAG, "Could not parse XML " + pce.getMessage());
     	} catch (SAXException se) {
-    		Log.e(TAG, "Could not parse XML"  + se.getMessage());
+    		Log.e(TAG, "Could not parse XML "  + se.getMessage());
     	}
     	saxelapsedTimeMillis = (System.currentTimeMillis() - saxstart ) / 1000;
     	Log.i("SAX - TIMER", "Time it took in seconds:" + Long.toString(saxelapsedTimeMillis));

@@ -1,11 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
-					
-					android:layout_width="fill_parent"
-					android:layout_height="fill_parent">
-
 			
-		<LinearLayout 
+		<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
 			android:id="@+id/statfind"
 			android:background="@color/darkgrey"
     		android:orientation="vertical"
@@ -71,23 +66,3 @@
     				android:layout_height="fill_parent" />
 		</LinearLayout>
 		
-		<SlidingDrawer
-     android:id="@+id/drawer"
-     android:layout_width="fill_parent"
-     android:layout_height="fill_parent"
-
-     android:handle="@+id/handle"
-     android:content="@+id/llplaylist">
-
-     <ImageView
-         android:id="@id/handle"
-         android:src="@drawable/icon" 
-         android:layout_width="wrap_content"
-         android:layout_height="wrap_content"/>
-
-     <include layout="@layout/playlisttab" />
-
- </SlidingDrawer>
-		
-</FrameLayout>
-

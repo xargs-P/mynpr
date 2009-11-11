@@ -2,9 +2,11 @@ package com.webeclubbin.mynpr;
 
 import android.app.Activity;
 import android.app.Dialog;
+import android.content.Context;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.net.Uri;
+import android.text.ClipboardManager;
 import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
@@ -150,7 +152,7 @@ public class SearchStationAdapter extends ArrayAdapter<Station> {
                 	final Dialog dialog = new Dialog(act);
 
                 	dialog.setContentView(com.webeclubbin.mynpr.R.layout.urlpopup);
-                	dialog.setTitle("Select Podcast Link");
+                	dialog.setTitle("Copy Podcast Link");
 
                 	//Set up Logo
                 	ImageView image = (ImageView) dialog.findViewById(com.webeclubbin.mynpr.R.id.slogo);
@@ -166,7 +168,14 @@ public class SearchStationAdapter extends ArrayAdapter<Station> {
                 	
                 	lv.setOnItemClickListener(new OnItemClickListener() {
                         public void onItemClick(AdapterView parent, View v, int position, long id) {
-                        	onItemClickHelper(v, position, act, dialog , s.getName(), s.getLogo() );
+                        	TextView t = (TextView)v;
+
+                        	String url = t.getText().toString();
+                        	ClipboardManager cm = (ClipboardManager) act.getSystemService(Context.CLIPBOARD_SERVICE);
+                        	cm.setText(url);
+                        	Toast.makeText(act, "Copied link to clipboard.", Toast.LENGTH_SHORT).show();
+                        	Toast.makeText(act, "Paste in your favorite RSS reader.", Toast.LENGTH_SHORT).show();
+                        	//onItemClickHelper(v, position, act, dialog , s.getName(), s.getLogo() );
                         }
                     });
                 

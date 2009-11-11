@@ -45,13 +45,15 @@ public class ImageHelper {
     //Grab image from URL and save bitmap for it
     public void setImageStorage(String[] url) { 
         String TAG = "setImageStorage";
-        Log.i(TAG, "Number of image urls: " + String.valueOf(url.length));
-        Log.i(TAG, "Cycle through");
-        for (int i=0; i < url.length; i++){
-        	if ( (url[i] == null) ||  ( url[i].equals(" ") ) || ( url[i].equals("") ) ) {  
-                continue;
+        if ( url != null ) {
+        	Log.i(TAG, "Number of image urls: " + String.valueOf(url.length));
+        	Log.i(TAG, "Cycle through");
+        	for (int i=0; i < url.length; i++){
+        		if ( (url[i] == null) ||  ( url[i].equals(" ") ) || ( url[i].equals("") ) ) {  
+        			continue;
+        		}
+        		processImage(url[i]); 
         	}
-        	processImage(url[i]); 
         }
 
     } 

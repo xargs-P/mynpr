@@ -4,7 +4,6 @@ package com.webeclubbin.mynpr;
 //http://blog.pocketjourney.com/2008/04/04/tutorial-custom-media-streaming-for-androids-mediaplayer/
 //Good looking out!
 
-import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
@@ -21,13 +20,11 @@ import android.content.Context;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
 import android.util.Log;
-import android.view.animation.Animation;
-import android.view.animation.AnimationUtils;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 
 /**
- * MediaPlayer does not yet support streaming from external URLs so this class provides a pseudo-streaming function
+ * MediaPlayer does not yet support "Shoutcast"-like streaming from external URLs so this class provides a pseudo-streaming function
  * by downloading the content incrementally & playing as soon as we get enough audio in our temporary storage.
  */
 public class StreamingMediaPlayer {
@@ -169,8 +166,7 @@ public class StreamingMediaPlayer {
     }  
     
     /**
-     * Test whether we need to transfer buffered data to the MediaPlayer.
-     * Interacting with MediaPlayer on non-main UI thread can causes crashes to so perform this using a Handler.
+     * Set Up player(s)
      */  
     private void  setupplayer(File partofaudio) {
     	final File f = partofaudio;
@@ -185,20 +181,7 @@ public class StreamingMediaPlayer {
 	        		MediaPlayer.OnCompletionListener listener = new MediaPlayer.OnCompletionListener () {
 	        			public void onCompletion(MediaPlayer mp){
 	        				String TAG = "MediaPlayer.OnCompletionListener";
-	        				/*Runnable r = new Runnable() {   
-	        			        public void run() {
-	        			        	String TAG = "MediaPlayer.OnCompletionListener";
-	        			        	Log.i(TAG, "Current size of mediaplayer list: " + mediaplayers.size() );
-	        			        	//Make sure we have the second mediaplayer ready to go before we start playing
-	        			        	while (mediaplayers.size() <= 1){
-	        			        		Log.v(TAG, "waiting for another mediaplayer");
-	        			        	}
-	        			        	//Get second media player
-	        			        	MediaPlayer mp2 = mediaplayers.get(1);
-	        			        	mp2.start();
-	        			        }
-	        				};
-	        			    new Thread(r).start();*/
+
 	        				Log.i(TAG, "Current size of mediaplayer list: " + mediaplayers.size() );
 	        				while (mediaplayers.size() <= 1){
     			        		Log.v(TAG, "waiting for another mediaplayer");
@@ -293,7 +276,7 @@ public class StreamingMediaPlayer {
     }
 
     
-	public void moveFile(File	oldLocation, File	newLocation)
+	/*public void moveFile(File	oldLocation, File	newLocation)
 	throws IOException {
 
 		if ( oldLocation.exists( )) {
@@ -325,6 +308,6 @@ public class StreamingMediaPlayer {
         } else {
 			throw new IOException("Old location does not exist when transferring " + oldLocation.getPath() + " to " + newLocation.getPath() );
         }
-	}
+	}*/
 }
 
