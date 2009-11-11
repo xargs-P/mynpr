@@ -14,8 +14,6 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLConnection;
 import java.net.URLEncoder;
-import java.util.Iterator;
-import java.util.List;
 import java.util.Set;
 import java.util.Vector;
 import java.util.regex.Matcher;
@@ -31,16 +29,12 @@ import android.app.Activity;
 import android.app.Dialog;
 import android.content.Context;
 import android.content.Intent;
-import android.content.pm.PackageManager;
-import android.content.pm.ResolveInfo;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
 import android.util.Log;
 import android.view.KeyEvent;
-import android.view.Menu;
-import android.view.MenuItem;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.view.View.OnKeyListener;
@@ -52,6 +46,7 @@ import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ListView;
+import android.widget.SlidingDrawer;
 import android.widget.TextView;
 import android.widget.Toast;
 import android.widget.AdapterView.OnItemClickListener;
@@ -75,12 +70,7 @@ public class SearchStationTab extends Activity implements Runnable {
 	
 	final static String PLS = ".pls";
     final static String M3U = ".m3u";
-	
-	//final private int MENU_LIVE_NPR = 0;
-	
-	//final static public String BITERATE_HEADER =  "icy-br";
-	//final static public String AUDIO_MIME =  "audio/mpeg";
-
+    
     /** Called when the activity is first created. */
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -95,6 +85,9 @@ public class SearchStationTab extends Activity implements Runnable {
 		lvsearch = (ListView) findViewById(com.webeclubbin.mynpr.R.id.lvstatfind);
 		EditText txtsearch = (EditText) findViewById(com.webeclubbin.mynpr.R.id.stationsearchbox);
 		maincontext = this;		
+		
+		//SlidingDrawer sd = (SlidingDrawer) findViewById( com.webeclubbin.mynpr.R.id.drawer);
+		//playlisttab.onCreate(new Bundle());
         
         button_search.setOnClickListener(new OnClickListener() {
       	   public void onClick(View v) {
@@ -107,6 +100,7 @@ public class SearchStationTab extends Activity implements Runnable {
       		   
       		   EditText ed = (EditText) findViewById( com.webeclubbin.mynpr.R.id.stationsearchbox);
       		   final LinearLayout header = (LinearLayout) findViewById( com.webeclubbin.mynpr.R.id.header);
+      		   
       		   //Show views if they are hiding else process users input
       		   
       		   if (header.getVisibility() == View.GONE){
@@ -557,28 +551,6 @@ public class SearchStationTab extends Activity implements Runnable {
 						Log.i(TAG, "Found One" );
 						
 						launchhelper(r, a, d, station, logo);
-						/*playthis = r[0];
-						uri = Uri.parse( playthis );
-						i = new Intent(Intent.ACTION_VIEW); 
-			            //i.setDataAndType(uri, AUDIO_MIME);
-			            
-						//launch intent
-						Log.i(TAG, "Position:" + position + " url " + t.getText().toString() + " Got this url out of it " + playthis  );
-						
-			            URL url;
-			        	URLConnection urlConn = null;
-			        	try {
-			        		url = new URL(playthis);
-			        		urlConn = url.openConnection();
-			        		Log.i(TAG, "Content Type: " + urlConn.getContentType() );
-			        		String mimetype =  urlConn.getContentType().toLowerCase();
-			        		i.setDataAndType(uri,mimetype);
-			        		
-			        	} catch (IOException ioe) {
-			        		Log.e( TAG, "Could not connect to " +  playthis );
-			        	}
-						
-						a.startActivity(i);*/
 
 					} else {
 						Log.i(TAG, "Found Several or a list: " );

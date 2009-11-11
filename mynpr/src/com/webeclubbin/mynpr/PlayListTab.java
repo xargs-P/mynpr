@@ -44,7 +44,6 @@ public class PlayListTab extends Activity implements Runnable {
 	private Thread thread = null;
 	private ImageView spinner = null;
 	private ImageButton button_playstatus = null;
-	//private boolean playstatus = false;
 	
 	private StreamingMediaPlayer audioStreamer = null;
  
@@ -65,6 +64,7 @@ public class PlayListTab extends Activity implements Runnable {
 		  	        playlist.addUrl(intent.getStringExtra(STATION), intent.getStringExtra(URL));
 		  	        updatescreen();
 		  	        play( intent.getStringExtra(STATION) ,intent.getStringExtra(URL) );
+		  	        //TODO scroll text? Marquee?
 		  	        //Scroller s = new Scroller(context , new AnticipateOvershootInterpolator (0) );
 		  	        //content.setScroller(s);
 	        }
@@ -87,19 +87,6 @@ public class PlayListTab extends Activity implements Runnable {
         
         button_playstatus = (ImageButton) findViewById(com.webeclubbin.mynpr.R.id.playstatus);
   		lv = (ListView) findViewById(com.webeclubbin.mynpr.R.id.playlist);
-        
-        /*lv.setOnItemClickListener(new OnItemClickListener() {
-            public void onItemClick(AdapterView parent, View v, int position, long id) {
-                
-                String TAG = "Playlist List Click";
-                Log.i(TAG, "Grab url and play");
-                TextView t = (TextView) v;
-                String oururl = (String) t.getText();
-                String[] station = playlist.getStations();
-                play(station[position], oururl);
-            	
-            }
-        });*/
 
         button_playstatus.setOnClickListener(new OnClickListener() {
      	   public void onClick(View v) {
@@ -109,9 +96,7 @@ public class PlayListTab extends Activity implements Runnable {
      			   Log.i(TAG, "Stop audio");
      			   audioStreamer.stop();
      			   audioStreamer = null;
-     				  
-     			   //button_playstatus.setImageResource(com.webeclubbin.mynpr.R.drawable.play);
-     			   //button_playstatus.postInvalidate();
+
      		   } else {
      			   //play audio
      			  Log.i(TAG, "Play audio");
@@ -122,12 +107,6 @@ public class PlayListTab extends Activity implements Runnable {
           		  String audiolink = (String) content.getText();
           		  
           		  if ( ! audiolink.equals("") ){
-          			  //final Animation rotate = AnimationUtils.loadAnimation(PlayListTab.this, com.webeclubbin.mynpr.R.anim.rotate);
-          			  //spinner = (ImageView) findViewById(com.webeclubbin.mynpr.R.id.process); 
-          			  //spinner.startAnimation(rotate);
-          		   
-          			  //button_playstatus.setImageResource(com.webeclubbin.mynpr.R.drawable.stop);
-          			  //button_playstatus.postInvalidate();
             		  play(ourstation, audiolink);
           		  } else {
           			Log.i(TAG, "Skip Playing audio. No link to play.");
@@ -162,28 +141,9 @@ public class PlayListTab extends Activity implements Runnable {
         	for(int i=0; i< bundlesize ; i++){
         		Log.i(TAG, "Bundle contents: " + ourstrings[i]);
         	}
-        	//byte[] b = savedInstanceState.getByteArray(POPSTORYLISTVIEW);
-        	
+	
         	ih = new ImageHelper(maincontext);
         	ih.setImageStorage(savedInstanceState.getStringArray(IMAGES));
-        	
-        	/*if ( b != null ) {
-        		try {     	    
-        	        // Deserialize from a byte array
-        			Log.i(TAG, "Deserialize objects from saved Bundle");
-        	        ObjectInputStream in = new ObjectInputStream(new ByteArrayInputStream(b));
-        	        lvpopstories = (String[][]) in.readObject();
-        	        in.close();
-        	        
-        	        //Update the view
-        	        Log.i(TAG, "Update list view for Stories");
-        	        updatepopscreen();
-        	    } catch (ClassNotFoundException e) {
-        	    	Log.e(TAG, e.toString());
-        	    } catch (IOException e) {
-        	    	Log.e(TAG, e.toString());
-        	    }
-        	}*/
 
         }
 
@@ -277,32 +237,6 @@ public class PlayListTab extends Activity implements Runnable {
     		Log.e(TAG, "Could not Load file");
     	}
     	
-    	/*try {
-    		FileInputStream fis = openFileInput(playlistfile);
-    		if (fis == null){
-    			Log.i(TAG, "No playlist file to open");
-    			return null;
-    		}
-    		DataInputStream in = new DataInputStream(fis);
-            BufferedReader br = new BufferedReader(new InputStreamReader(in));
-            String strLine;
-            Log.i(TAG,"loop through file");
-            //Read File Line By Line
-            while ((strLine = br.readLine()) != null)   {
-            	// Print the content on the console
-            	
-            	String [] s = Pattern.compile(SPLITTERAUDIO).split(strLine);
-            	if ( strLine.contains(SPLITTERAUDIO) ) {
-            		p.addUrl(s[0], s[1]);
-            	} else if ( strLine.contains(SPLITTERSTATION) ) {
-            		p.addStation(s[0], s[1]);
-            	}
-            }
-    		
-    	} catch (IOException ioe) {
-    		Log.e(TAG, "Invalid XML format?? " + ioe.getMessage() );
-    	}*/
-    	
     	return p;
     }
     
@@ -317,28 +251,6 @@ public class PlayListTab extends Activity implements Runnable {
     		Log.i(TAG, "Save playlist");
     		playlist.savetofile();
     	}
-    	//Store station list view
-    	/*byte[] bufOfStations = null;
-
-    	try {
-    		// Serialize to a byte array - Stations
-            ByteArrayOutputStream bos = new ByteArrayOutputStream() ;
-            ObjectOutputStream out = new ObjectOutputStream(bos) ;
-            out.writeObject(lvpopstories);
-            out.close();
-        
-            // Get the bytes of the serialized object
-            bufOfStations = bos.toByteArray();
-
-        } catch (IOException e) {
-        	Log.e(TAG, e.toString());
-        }
-        Log.i(TAG, "Saving lvresults"); //POPDATE
-        instanceState.putByteArray(POPSTORYLISTVIEW, bufOfStations);
-        Log.i(TAG, "Saving Update Time");
-        instanceState.putString(POPDATE, popstorydate);
-        Log.i(TAG, "Saving Image Urls");
-        instanceState.putStringArray(IMAGES, ih.getUrls() );*/
 
     	super.onSaveInstanceState(instanceState);
     }

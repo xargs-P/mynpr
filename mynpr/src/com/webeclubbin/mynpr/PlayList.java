@@ -77,17 +77,6 @@ public class PlayList {
 		return s.toArray(t);
 	}
 	
-	/*public String getStation(String url){
-		//There is probably a better/faster way to do this. But since the list should be small it should be okay. ????
-		Iterator<Entry<String, Vector<String>>> it = plist.entrySet().iterator();
-		//Loop through data and save for later
-		Set<Entry<String, Vector<String>>> s = plist.entrySet();
-		Map.Entry<String, Vector<String>>[] t;
-		Map.Entry<String, Vector<String>>[] me = s.toArray( t );
-		String[] t = {""} ;
-		return s.toArray(t);
-	}*/
-	
 	//Get Logos
 	public String[] getLogos(){
 		Log.i(TAG, "getLogos");
@@ -114,13 +103,6 @@ public class PlayList {
 			return null;
 		}
 	}
-	
-	//Grab all audio urls 
-	/*public String[] getAllurls(){
-		Collection<Vector<String>> v = plist.values();
-		String[] t = {""} ;
-		return v.toArray(t);
-	}*/
 	
 	//Load data from file
 	public boolean loadfromfile(){
