@@ -93,7 +93,9 @@ public class ImageHelper {
     		if (bm == null) {
     			try { 
     				URL aURL = new URL(url); 
-    				URLConnection conn = aURL.openConnection(); 
+    				URLConnection conn = aURL.openConnection();
+    				conn.setConnectTimeout(1000 * 5);
+    				conn.setReadTimeout(1000 * 5);
     				conn.connect();
     				Log.i(TAG, "grabbing " + url );
     				InputStream is = conn.getInputStream(); 

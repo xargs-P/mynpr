@@ -225,7 +225,7 @@ public class PopStoryTab extends Activity implements Runnable {
             	SimpleDateFormat sdf = new SimpleDateFormat(DATE_FORMAT_NOW);
             	popstorydate = sdf.format( new Date(oldtime) );
             	
-    			Log.i( TAG, "Under " + (TIMETOWAIT/60) + "mins since last update. So no need to redownload");
+    			Log.i( TAG, "Under " + (TIMETOWAIT/60) + "mins since last update. So no need to redownload: "  + elaspedtime);
         		return false;
         	
     		} else {
@@ -289,13 +289,22 @@ public class PopStoryTab extends Activity implements Runnable {
     private void updatepopscreen(){
 		String [] title = null; 
 		String [] image = null;
-
+		String TAG = "updatepopscreen";
+		
+		Log.i(TAG, "ENTER");
+		
 		title = lvpopstories[0];
 		image = lvpopstories[1];
+		
+		if (title == null){
+			Log.i(TAG, "Null Title");
+		}
+		if (image == null){
+			Log.i(TAG, "Null image");
+		}
+		
 
-		String TAG = "updatepopscreen";
-
-		Log.i(TAG, "ENTER");
+		
 		if ( ih == null ){
 			ih = new ImageHelper(maincontext);
 			ih.setImageStorage(image);
@@ -309,6 +318,9 @@ public class PopStoryTab extends Activity implements Runnable {
 		
 		//Set date on view
 		TextView poprefresh = (TextView) findViewById(com.webeclubbin.mynpr.R.id.poprefresh);
+		if (popstorydate == null){
+			popstorydate = "";
+		}
 		poprefresh.setText("Refreshed " + popstorydate );
 		
     	//Tell UI to update our list
@@ -385,9 +397,9 @@ public class PopStoryTab extends Activity implements Runnable {
     		Log.i( TAG, "AFTER: Parse - SAX");
     	} catch (FileNotFoundException notfound) {
     		Log.e(TAG, "File not found.");
-    		Log.i(TAG, "redownload data");
-    		updatepopstories = true;
-			grabdata_popstories( strURL );
+    		//Log.i(TAG, "redownload data");
+    		//updatepopstories = true;
+			//grabdata_popstories( strURL );
     	} catch (IOException ioe) {
     		Log.e(TAG, "Invalid XML format?? " + ioe.getMessage() );
     	} catch (ParserConfigurationException pce) {

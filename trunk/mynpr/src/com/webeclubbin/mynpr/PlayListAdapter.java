@@ -64,7 +64,22 @@ public class PlayListAdapter extends ArrayAdapter<String> {
 
                     }
                 });
-        		
+        		/*setOnLongClickListener(View.OnLongClickListener l)
+        		  audiourl.setOnLongClickListener(new View.OnLongClickListener() {
+                    public void onLongClick( View v ) {
+                    	String TAG = "Playlist Long Click";
+                        Log.i(TAG, "Create dialog to delete");
+                        TextView t = (TextView) v;
+                        String oururl = (String) t.getText();
+                        
+                        PlayListTab p = (PlayListTab) context; 
+                        p.play(stations[position], oururl);
+						//We need to modify playlist inside playlisttab
+						//Also we need to determine if this is the last link for the station and if so, delete the station
+						//We also need to reset the adapter
+                    }
+                });
+        		*/
         		row.addView(audiourl);
         	}
         	
