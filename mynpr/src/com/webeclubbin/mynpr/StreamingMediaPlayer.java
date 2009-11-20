@@ -20,13 +20,13 @@ import android.content.Context;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
 import android.util.Log;
-import android.widget.ImageButton;
 import android.widget.ImageView;
+import android.widget.Toast;
 
 /**
  * MediaPlayer does not yet support "Shoutcast"-like streaming from external URLs so this class provides a pseudo-streaming function
  * by downloading the content incrementally & playing as soon as we get enough audio in our temporary storage.
- */
+ */ 
 public class StreamingMediaPlayer {
 
 	final static public String AUDIO_MIME =  "audio/mpeg";
@@ -65,13 +65,20 @@ public class StreamingMediaPlayer {
     	URL url;
         URLConnection urlConn = null;
         int bitrate = 56;
-
+        PlayListTab a = (PlayListTab) context ;
+        
+        a.handler.sendEmptyMessage(PlayListTab.START);
+        
     	try {
     		url = new URL(mediaUrl);
     		urlConn = (HttpURLConnection)url.openConnection();
+    		urlConn.setReadTimeout(1000 * 5);
+    		urlConn.setConnectTimeout(1000 * 5);
+    		urlConn.connect();
+    		String ctype = urlConn.getContentType ().toLowerCase() ;
     		//See if this is a type we can handle
-    		Log.i(TAG, "Content Type: " + urlConn.getContentType () );
-    		if (urlConn.getContentType ().toLowerCase().contains(AUDIO_MIME)){
+    		Log.i(TAG, "Content Type: " + ctype );
+    		if (ctype.contains(AUDIO_MIME)){
     			
     			String temp = urlConn.getHeaderField(BITERATE_HEADER);
     			Log.i(TAG, "Bitrate: " + temp );
@@ -79,11 +86,17 @@ public class StreamingMediaPlayer {
     				bitrate = new Integer(temp).intValue();
     			}
     		} else {
-    			Log.e(TAG, "Can not open media type");
-    			//TODO Add toast message here.
+    			Log.e(TAG, "Does not look like we can play this audio type: " + ctype);
+    			Log.e(TAG, "Or we could not connect to audio");
+    			Toast.makeText(context, "myNPR can not play this audio type: " + ctype , Toast.LENGTH_LONG).show();
+    			stop();
+    			return;
     		}
     	} catch (IOException ioe) {
     		Log.e( TAG, "Could not connect to " +  mediaUrl );
+    		stop();
+    		Toast.makeText(context, "Could not connect to " +  mediaUrl , Toast.LENGTH_LONG).show();
+    		return;
     	} 
     	
     	//Set up buffer size
@@ -112,6 +125,7 @@ public class StreamingMediaPlayer {
     	final String TAG = "downloadAudioIncrement";
 
     	URLConnection cn = new URL(mediaUrl).openConnection(); 
+    	cn.setConnectTimeout(1000 * 30);
         cn.connect();   
         stream = cn.getInputStream();
         if (stream == null) {
@@ -121,8 +135,8 @@ public class StreamingMediaPlayer {
 		Log.i(TAG, "File name: " + downloadingMediaFile);
 		BufferedOutputStream bout = new BufferedOutputStream ( new FileOutputStream(downloadingMediaFile), 32 * 1024 );   
         byte buf[] = new byte[16 * 1024];
-        int totalBytesRead = 0, incrementalBytesRead = 0;
-        //boolean stop = false;
+        int totalBytesRead = 0, incrementalBytesRead = 0, numread = 0;
+        
         do {
         	if (bout == null) {
         		counter++;
@@ -132,22 +146,32 @@ public class StreamingMediaPlayer {
         		bout = new BufferedOutputStream ( new FileOutputStream(downloadingMediaFile) );	
         	}
 
-        	int numread = stream.read(buf);  
+        	try {
+        		numread = stream.read(buf);
+        	} catch (IOException e){
+        		Log.e(TAG, e.toString());
+        		if (stream != null){
+        			Log.i(TAG, "Bad read. Let's try to reconnect to source and continue downloading");
+        			cn = new URL(mediaUrl).openConnection(); 
+        			cn.setConnectTimeout(1000 * 30);
+        	        cn.connect();   
+        	        stream = cn.getInputStream();
+        	        numread = stream.read(buf);
+        		}
+        	}
         	
             if (numread <= 0) {  
                 break;   
             	
             } else {
             	//Log.v(TAG, "write to file");
-                bout.write(buf, 0, numread);
+            	bout.write(buf, 0, numread);
 
-                totalBytesRead += numread;
-                incrementalBytesRead += numread;
-                totalKbRead = totalBytesRead/1000;
+            	totalBytesRead += numread;
+            	incrementalBytesRead += numread;
+            	totalKbRead = totalBytesRead/1000;
             }
             
-            
-            //if ( totalKbRead >= INTIAL_KB_BUFFER && ! stop) {
             if ( totalKbRead >= INTIAL_KB_BUFFER ) {
             	Log.v(TAG, "Reached Buffer amount we want: " + "totalKbRead: " + totalKbRead + " INTIAL_KB_BUFFER: " + INTIAL_KB_BUFFER);
             	bout.flush();
@@ -183,16 +207,39 @@ public class StreamingMediaPlayer {
 	        				String TAG = "MediaPlayer.OnCompletionListener";
 
 	        				Log.i(TAG, "Current size of mediaplayer list: " + mediaplayers.size() );
-	        				while (mediaplayers.size() <= 1){
+	        				boolean waitingForPlayer = false;
+	        				boolean leave = false;
+	        				while (mediaplayers.size() <= 1 && leave == false){
     			        		Log.v(TAG, "waiting for another mediaplayer");
+    			        		if (waitingForPlayer == false ){
+    			        			try {
+    			        				Log.v(TAG, "Sleep for a moment");
+    			        				//Spin the spinner
+    			        				PlayListTab a = (PlayListTab) context ;
+    			        				a.handler.sendEmptyMessage(PlayListTab.SPIN);
+    			        				Thread.sleep(1000 * 15);
+    			        				a.handler.sendEmptyMessage(PlayListTab.STOPSPIN);
+    			        				waitingForPlayer = true;
+    			        			} catch (InterruptedException e) {
+    			        				Log.e(TAG, e.toString());
+    			        			}
+    			        		} else {
+    			        			Log.e(TAG, "Timeout occured waiting for another media player");
+    			        			Toast.makeText(context, "Trouble downloading audio. :-(" , Toast.LENGTH_LONG).show();
+    			        			stop();
+    			        			
+    			        			leave = true;
+    			        		}
     			        	}
-	        				MediaPlayer mp2 = mediaplayers.get(1);
-    			        	mp2.start();
-    			        	Log.i(TAG, "Start new player");
+	        				if (leave == false){
+	        					MediaPlayer mp2 = mediaplayers.get(1);
+	        					mp2.start();
+	        					Log.i(TAG, "Start another player");
     			        	
-	        				mp.release();
-	        				mediaplayers.remove(mp);
-	        				removefile();
+	        					mp.release();
+	        					mediaplayers.remove(mp);
+	        					removefile();
+	        				}
 	        				
 	        			}
 	        		};
@@ -218,8 +265,10 @@ public class StreamingMediaPlayer {
 		        	}
 	        	} catch  (IllegalStateException	e) {
 	        		Log.e(TAG, e.toString());
+	        		stop();
 	        	} catch  (IOException	e) {
 	        		Log.e(TAG, e.toString());
+	        		stop();
 	        	}
 	        	
  	        }
@@ -246,10 +295,11 @@ public class StreamingMediaPlayer {
     	MediaPlayer mp = mediaplayers.get(0);
     	Log.i(TAG,"Start Player");
     	mp.start(); 
-    	Activity a = (Activity) context;
+    	PlayListTab a = (PlayListTab) context;
 
-    	ImageView spinner = (ImageView) a.findViewById(R.id.process); 
-		spinner.clearAnimation();
+    	a.handler.sendEmptyMessage(PlayListTab.STOPSPIN);
+    	//ImageView spinner = (ImageView) a.findViewById(R.id.process); 
+		//spinner.clearAnimation();
     	
     }
     
@@ -257,57 +307,48 @@ public class StreamingMediaPlayer {
     public void stop(){
     	String TAG = "STOP";
     	Log.i(TAG,"Stop Player");
+    	PlayListTab a = (PlayListTab) context;
     	try {
-    		MediaPlayer mp = mediaplayers.get(0);
-    		mp.pause();
-    		stream.close();
+    		if (! mediaplayers.isEmpty() ){
+    			MediaPlayer mp = mediaplayers.get(0);
+    			if (mp.isPlaying()){
+    				mp.pause();
+    			}
+    		}
+    		
+    		if (stream != null){
+    			stream.close();
+    		}
     		stream = null;
-    		Activity a = (Activity) context;
-    		ImageView spinner = (ImageView) a.findViewById(R.id.process); 
-    		spinner.clearAnimation();
-    		ImageButton button_playstatus = (ImageButton) a.findViewById(com.webeclubbin.mynpr.R.id.playstatus);
-    		button_playstatus.setImageResource(com.webeclubbin.mynpr.R.drawable.play);
-			button_playstatus.postInvalidate();
+    		
+    		a.handler.sendEmptyMessage(PlayListTab.STOP);
+
     	} catch (ArrayIndexOutOfBoundsException e) {
-    		Log.e(TAG, "No items in Vector");
+    		Log.e(TAG, "No items in Media player List");
+    		a.handler.sendEmptyMessage(PlayListTab.STOP);
     	} catch (IOException e) {
     		Log.e(TAG, "error closing open connection");
+    		a.handler.sendEmptyMessage(PlayListTab.STOP);
     	}
     }
 
+    //Is the streamer playing audio?
+    public boolean isPlaying() {
+    	String TAG = "isPlaying";
+    	boolean result = false;
+    	try {
+    		MediaPlayer mp = mediaplayers.get(0);
+    		if (mp.isPlaying()){
+    			result = true;
+    		} else {
+    			result = false;
+    		}
+    	} catch (ArrayIndexOutOfBoundsException e) {
+    		Log.e(TAG, "No items in Media player List");
+    	}
+    	
+    	return result;
+    }
     
-	/*public void moveFile(File	oldLocation, File	newLocation)
-	throws IOException {
-
-		if ( oldLocation.exists( )) {
-			BufferedInputStream  reader = new BufferedInputStream( new FileInputStream(oldLocation) );
-			//BufferedOutputStream  writer = new BufferedOutputStream( new FileOutputStream(newLocation, false));
-			BufferedOutputStream  writer = new BufferedOutputStream( new FileOutputStream(newLocation));
-            try {
-            	
-		        byte[]  buff = new byte[8192];
-		        int numChars;
-		        Log.v(getClass().getName(),"write old file on to new file");
-		        //while ( (numChars = reader.read(  buff, 0, buff.length ) ) != -1) {
-		        while ((numChars = reader.read(buff)) > 0){
-		        	writer.write( buff, 0, numChars );
-      		    }
-            } catch( IOException ex ) {
-				throw new IOException("IOException when transferring " + oldLocation.getPath() + " to " + newLocation.getPath());
-            } finally {
-                try {
-                    if ( reader != null ){
-                    	Log.v(getClass().getName(),"close reader and writer");
-                    	writer.close();
-                        reader.close();
-                    }
-                } catch( IOException ex ){
-				    Log.e(getClass().getName(),"Error closing files when transferring " + oldLocation.getPath() + " to " + newLocation.getPath() ); 
-				}
-            }
-        } else {
-			throw new IOException("Old location does not exist when transferring " + oldLocation.getPath() + " to " + newLocation.getPath() );
-        }
-	}*/
 }
 

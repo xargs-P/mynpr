@@ -106,6 +106,7 @@ public class PlayList {
 	
 	//Load data from file
 	public boolean loadfromfile(){
+		String TAG = "Load Playlist to File";
 		try {
     		FileInputStream fis = context.openFileInput(playlistfile);
     		if (fis == null){
@@ -141,6 +142,7 @@ public class PlayList {
 	
 	//Save data to file
 	public boolean savetofile(){
+		String TAG = "Save Playlist to File";
 		try {
     		FileOutputStream fos = context.openFileOutput(playlistfile, Context.MODE_PRIVATE);
     		if (fos == null){

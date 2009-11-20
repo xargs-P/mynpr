@@ -45,9 +45,20 @@ public class PlayListTab extends Activity implements Runnable {
 	private ImageView spinner = null;
 	private ImageButton button_playstatus = null;
 	
+	private String currentStation = "";
+	private String currentURL = "";
+	
+	private boolean playstatus = false;
+	
 	private StreamingMediaPlayer audioStreamer = null;
  
 	private final String IMAGES = "IMAGES";
+	
+	public static final int UPDATE = 0;
+	public static final int STOP = 1;
+	public static final int START = 2;
+	public static final int SPIN = 3;
+	public static final int STOPSPIN = 4;
 
     private BroadcastReceiver playListReceiver = new BroadcastReceiver() {
 	        @Override
@@ -62,6 +73,7 @@ public class PlayListTab extends Activity implements Runnable {
 
 		  	        playlist.addStation(intent.getStringExtra(STATION), intent.getStringExtra(LOGO));
 		  	        playlist.addUrl(intent.getStringExtra(STATION), intent.getStringExtra(URL));
+		  	        playlist.savetofile();
 		  	        updatescreen();
 		  	        play( intent.getStringExtra(STATION) ,intent.getStringExtra(URL) );
 		  	        //TODO scroll text? Marquee?
@@ -91,29 +103,27 @@ public class PlayListTab extends Activity implements Runnable {
         button_playstatus.setOnClickListener(new OnClickListener() {
      	   public void onClick(View v) {
      		   String TAG = "PlayStatus - onClick";
+     		   
      		   if (audioStreamer != null){
-     			   //Stop audio
-     			   Log.i(TAG, "Stop audio");
-     			   audioStreamer.stop();
+     			   if (audioStreamer.isPlaying()) {
+     				  //Stop audio
+     				  Log.i(TAG, "Stop audio");
+     				  audioStreamer.stop();
+     			   }
      			   audioStreamer = null;
 
-     		   } else {
-     			   //play audio
-     			  Log.i(TAG, "Play audio");
-     			   
-     			  TextView station = (TextView) findViewById(com.webeclubbin.mynpr.R.id.playingstation);
-          		  String ourstation = (String) station.getText();   
-          		  TextView content = (TextView) findViewById(com.webeclubbin.mynpr.R.id.playingcontent);
-          		  String audiolink = (String) content.getText();
-          		  
-          		  if ( ! audiolink.equals("") ){
-            		  play(ourstation, audiolink);
-          		  } else {
-          			Log.i(TAG, "Skip Playing audio. No link to play.");
-          		  }
-          		   
-     		   }
+     		   } 
      		   
+     		   if (playstatus == false) {
+     			  //play audio
+      			  Log.i(TAG, "Play audio");
+
+           		  if ( ! currentURL.equals("") ){
+             		  play(currentStation, currentURL);
+           		  } else {
+           			Log.i(TAG, "Skip Playing audio. No link to play.");
+           		  }
+     		   }
      		   
      	   }
         }); 
@@ -122,7 +132,7 @@ public class PlayListTab extends Activity implements Runnable {
         if (savedInstanceState == null){
         	Log.i(TAG, "Bundle savedInstanceState is null.");
         	
-    		final Animation rotate = AnimationUtils.loadAnimation(PlayListTab.this, R.anim.rotate);
+        	final Animation rotate = AnimationUtils.loadAnimation(maincontext, R.anim.rotate);
     		spinner = (ImageView) findViewById(R.id.process); 
     		spinner.startAnimation(rotate);
   		   
@@ -156,9 +166,10 @@ public class PlayListTab extends Activity implements Runnable {
     		handler.sendEmptyMessage(0);
     }
     
-    private Handler handler = new Handler() {
+    public Handler handler = new Handler() {
         @Override
-        public void handleMessage(Message msg) {      
+        public void handleMessage(Message msg) {    
+        	if (msg.what == PlayListTab.UPDATE){
         		updatescreen();
         		    		
         		if (spinner != null ) {
@@ -166,13 +177,52 @@ public class PlayListTab extends Activity implements Runnable {
         				spinner.clearAnimation();
         			}        			
         		}
+        	} else if (msg.what == PlayListTab.STOP){
+        		//If we are sending 1, then the audio stopped playing
+        		setplaystatus( false );
+        	} else if (msg.what == PlayListTab.START){
+        		//If we are sending 2, then the audio started playing
+        		setplaystatus( true );
+        	} else if (msg.what == PlayListTab.SPIN){
+        		//Start spinner
+        		final Animation rotate = AnimationUtils.loadAnimation(maincontext, R.anim.rotate);
+        		spinner = (ImageView) findViewById(R.id.process); 
+        		spinner.startAnimation(rotate);
+        	} else if (msg.what == PlayListTab.STOPSPIN){
+        		//Stop spinner
+        		spinner = (ImageView) findViewById(R.id.process); 
+        		spinner.clearAnimation();
+        	}
         }
     };
+    
+    //Set play status
+    private void setplaystatus( boolean p) {
+    	playstatus = p;
+    	
+    	//If set to false . Reset screen
+    	if ( playstatus == false ){
+    		ImageView spinner = (ImageView) findViewById(R.id.process); 
+    		spinner.clearAnimation();
+    		ImageButton button_playstatus = (ImageButton) findViewById(com.webeclubbin.mynpr.R.id.playstatus);
+    		button_playstatus.setImageResource(com.webeclubbin.mynpr.R.drawable.play);
+			button_playstatus.postInvalidate();
+    	}
+    }
     
     //Play audio link
     public void play(String ourstation, final String audiolink){
     	final String TAG = "PLAY audio";
 
+    	currentStation = ourstation;
+    	currentURL = audiolink;
+    	if (audioStreamer != null ){
+    		if (audioStreamer.isPlaying()) {
+    			audioStreamer.stop();
+    		}
+			audioStreamer = null;
+		}
+    	
     	final Animation rotate = AnimationUtils.loadAnimation(maincontext, R.anim.rotate);
 		spinner = (ImageView) findViewById(R.id.process); 
 		spinner.startAnimation(rotate);
