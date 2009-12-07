@@ -6,10 +6,13 @@ import java.util.Set;
 
 import android.app.Activity;
 import android.app.TabActivity;
+import android.content.ComponentName;
 import android.content.Intent;
+import android.content.ServiceConnection;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
 import android.os.Bundle;
+import android.os.IBinder;
 import android.util.DisplayMetrics;
 import android.util.Log;
 import android.widget.TabHost;
@@ -21,7 +24,9 @@ public class MyNPR extends TabActivity {
 	public static final String tPOP = "tab_pop";
 	public static final String tSEARCH = "tab_search";
 	public static final String tPLAY = "tab_play";
+	public static final String STREAM = "myNPR_Stream";
 	final static String packagename = "com.webeclubbin.mynpr";
+	public final static int PLAYING_ID = 1;
 	//final static String apikey = "MDAzMzcxNzY2MDEyNDAyODA5MTU1YTJmYw001";
 	TabHost tabHost = null;
 
@@ -98,8 +103,6 @@ public class MyNPR extends TabActivity {
     	Log.i(TAG, "Sending intent");
     	//maincontext.sendBroadcast(i , permissions);
     	PackageManager pm = getPackageManager();
-    	//List<ResolveInfo> list = pm.queryBroadcastReceivers(i, PackageManager.GET_RESOLVED_FILTER);
-    	//List<ResolveInfo> list = pm.queryBroadcastReceivers(i, PackageManager.MATCH_DEFAULT_ONLY);
     	List<ResolveInfo> list = pm.queryBroadcastReceivers(i, PackageManager.GET_INTENT_FILTERS);
     	Iterator it = list.iterator();
     	while (it.hasNext()){
@@ -108,4 +111,6 @@ public class MyNPR extends TabActivity {
     	}
     	maincontext.sendBroadcast(i );
     }
+    
+
 }

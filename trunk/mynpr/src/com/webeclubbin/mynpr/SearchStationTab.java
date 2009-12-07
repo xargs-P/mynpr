@@ -46,7 +46,6 @@ import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ListView;
-import android.widget.SlidingDrawer;
 import android.widget.TextView;
 import android.widget.Toast;
 import android.widget.AdapterView.OnItemClickListener;
@@ -468,8 +467,13 @@ public class SearchStationTab extends Activity implements Runnable {
         		url = new URL(playthis);
         		urlConn = (HttpURLConnection)url.openConnection();
         		//See if this is a type we can handle
-        		Log.i(TAG, "Content Type: " + urlConn.getContentType () );
-        		if (urlConn.getContentType ().toLowerCase().contains(StreamingMediaPlayer.AUDIO_MIME)){
+        		String ctype = urlConn.getContentType () ;
+        		Log.i(TAG, "Content Type: " + ctype );
+        		if (ctype == null){
+        			ctype = "";
+        		}
+        		 
+        		if (ctype.contains(StreamingMediaPlayer.AUDIO_MIME) || ctype.equals("")){
         			
         			i = new Intent(MyNPR.tPLAY);
 
@@ -487,11 +491,10 @@ public class SearchStationTab extends Activity implements Runnable {
                     Log.v(TAG, "mime type: " + i.getType());
                     //launch intent
                     Log.i(TAG, "Launch Playlist Tab");
-                    previousdialog.dismiss();
+                    if (previousdialog != null){
+                    	previousdialog.dismiss();
+                    }
 
-        			//StreamingMediaPlayer audioStreamer = new StreamingMediaPlayer(a);
-            		//audioStreamer.startStreaming(playthis,bitrate);
-                    
                     MyNPR parent = (MyNPR) a.getParent();
                     
                     Log.i(TAG, "Switch to playlist tab");

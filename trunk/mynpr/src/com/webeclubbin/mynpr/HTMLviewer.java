@@ -77,7 +77,7 @@ public class HTMLviewer extends Activity {
     	i.setType("text/plain");
 
     	i.putExtra(Intent.EXTRA_TEXT, webview.getOriginalUrl() );
-    	i.putExtra(Intent.EXTRA_SUBJECT, webview.getTitle() + " [From myNPR app]");
+    	i.putExtra(Intent.EXTRA_SUBJECT, webview.getTitle() + " [From myNPR]");
        
         //launch intent
         Log.i(TAG, "Start Activity");

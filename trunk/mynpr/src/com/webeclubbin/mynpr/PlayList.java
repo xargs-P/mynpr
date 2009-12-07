@@ -9,6 +9,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
+import java.io.Serializable;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Set;
@@ -20,7 +21,7 @@ import android.content.Context;
 import android.util.Log;
 
 //Holds the playlist information
-public class PlayList {
+public class PlayList  {
 
 	private HashMap<String, Vector<String> > plist = new HashMap<String, Vector<String> >();
 	private HashMap<String, String> logos = new HashMap<String, String>();

@@ -15,19 +15,20 @@ import java.net.URL;
 import java.net.URLConnection;
 import java.util.Vector;
 
-import android.app.Activity;
+import android.app.Service;
 import android.content.Context;
+import android.content.Intent;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
+import android.os.IBinder;
 import android.util.Log;
-import android.widget.ImageView;
 import android.widget.Toast;
 
 /**
  * MediaPlayer does not yet support "Shoutcast"-like streaming from external URLs so this class provides a pseudo-streaming function
  * by downloading the content incrementally & playing as soon as we get enough audio in our temporary storage.
  */ 
-public class StreamingMediaPlayer {
+public class StreamingMediaPlayer extends Service {
 
 	final static public String AUDIO_MIME =  "audio/mpeg";
 	final static public String BITERATE_HEADER =  "icy-br";
@@ -47,13 +48,136 @@ public class StreamingMediaPlayer {
 	private Vector<MediaPlayer> mediaplayers = new Vector<MediaPlayer>(3);
 	private boolean started = false; 
 	private InputStream stream = null;
+	private URL url = null;
+    private URLConnection urlConn = null;
+    
+    private String station = null;
+    private String audiourl = null;
+    
+    private Intent startingIntent = null;
 
- 	public StreamingMediaPlayer(Context c) 
+    //This object will allow other processes to interact with our service
+    private final IStreamingMediaPlayer.Stub ourBinder = new IStreamingMediaPlayer.Stub(){
+        String TAG = "IStreamingMediaPlayer.Stub";
+        // Returns Currently Station Name
+        public String getStation(){
+        	Log.i(TAG, "getStation" );
+        	return station;
+        }
+        
+        // Returns Currently Playing audio url
+        public String getUrl(){
+        	Log.i(TAG, "getUrl" );
+        	return audiourl;
+        }
+        
+        // Check to see if service is playing audio
+    	public boolean playing(){
+    		Log.i(TAG, "playing?" );
+    		return isPlaying();
+    	}
+    	
+    	//Start playing audio
+    	public void startAudio(){
+    		Log.i(TAG, "startAudio" );
+    		
+    		Log.i(TAG, "Intent: " + startingIntent.getStringExtra(PlayListTab.URL));
+        	Log.i(TAG, "Station: " + startingIntent.getStringExtra(PlayListTab.STATION));
+        	
+        	audiourl =  startingIntent.getStringExtra(PlayListTab.URL);
+        	station =  startingIntent.getStringExtra(PlayListTab.STATION);
+        	
+        	//Stop player if it is running
+        	if ( isPlaying() ) {
+        		stop();
+        	}
+    		
+    		try {
+    			counter = 0;
+    			downloadingMediaFile = new File(context.getCacheDir(),DOWNFILE + counter);
+         		downloadingMediaFile.deleteOnExit();
+         		
+        		startStreaming( audiourl );
+        	} catch (IOException e) {
+        		Log.i(TAG, e.toString() );
+        	}
+    		
+    	}
+    	
+    	//Stop playing audio
+    	public void stopAudio() {
+    		Log.i(TAG, "stopAudio" );
+    		stop();
+    	}
+    };
+    
+    @Override 
+    public void onCreate() {
+    	  super.onCreate();
+    	  
+    	  String TAG = "StreamingMediaPlayer - onCreate";
+    	  Log.i(TAG, "START");
+
+    	  // init the service here
+
+    }
+    
+    @Override
+    public void onStart (Intent intent, int startId){
+    	super.onStart(intent, startId);
+    	
+    	String TAG = "StreamingMediaPlayer - onStart";
+    	Log.i(TAG, "START");
+    	
+    	Log.i(TAG, "Intent: " + intent.getStringExtra(PlayListTab.URL));
+    	Log.i(TAG, "Station: " + intent.getStringExtra(PlayListTab.STATION));
+    	
+    	audiourl =  intent.getStringExtra(PlayListTab.URL);
+    	station =  intent.getStringExtra(PlayListTab.STATION);
+    	
+    	Log.i(TAG,"Run startStreaming function");
+    	try {
+    		context = this;
+     		downloadingMediaFile = new File(context.getCacheDir(),DOWNFILE + counter);
+     		downloadingMediaFile.deleteOnExit();
+     		
+    		startStreaming( audiourl );
+    	} catch (IOException e) {
+    		Log.i(TAG, e.toString() );
+    	}
+    	
+    }
+    
+    @Override 
+    public void onDestroy() {
+    	  super.onDestroy();
+
+    	  String TAG = "StreamingMediaPlayer - onDestroy";
+    	  Log.i(TAG, "START");
+    	  
+    	  // stop the service here
+
+    }
+    
+    @Override
+    public IBinder onBind (Intent intent){
+    	String TAG = "StreamingMediaPlayer - onBind";
+    	Log.i(TAG, "START");
+    	Log.i(TAG, "Intent: " + intent.getStringExtra(PlayListTab.URL));
+    	Log.i(TAG, "Station: " + intent.getStringExtra(PlayListTab.STATION));
+    	startingIntent = intent;
+
+    	context = this;
+    	
+    	return ourBinder;
+    }
+    
+ 	/*public StreamingMediaPlayer(Context c) 
  	{
  		context = c;
  		downloadingMediaFile = new File(context.getCacheDir(),DOWNFILE + counter);
  		downloadingMediaFile.deleteOnExit();
-	}
+	}*/
 	
     /**  
      * Progressivly download the media to a temporary location and update the MediaPlayer as new content becomes available.
@@ -62,23 +186,29 @@ public class StreamingMediaPlayer {
     	
     	final String TAG = "startStreaming";
     	
-    	URL url;
-        URLConnection urlConn = null;
+    	//URL url;
+        //URLConnection urlConn = null;
         int bitrate = 56;
-        PlayListTab a = (PlayListTab) context ;
         
-        a.handler.sendEmptyMessage(PlayListTab.START);
+        //PlayListTab a = (PlayListTab) context ;
+        //a.handler.sendEmptyMessage(PlayListTab.START);
         
     	try {
     		url = new URL(mediaUrl);
     		urlConn = (HttpURLConnection)url.openConnection();
     		urlConn.setReadTimeout(1000 * 5);
     		urlConn.setConnectTimeout(1000 * 5);
-    		urlConn.connect();
-    		String ctype = urlConn.getContentType ().toLowerCase() ;
-    		//See if this is a type we can handle
+    		//urlConn.connect();
+    		String ctype = urlConn.getContentType () ;
+    		if (ctype == null){
+    			ctype = "";
+    		} else {
+    			ctype = ctype.toLowerCase() ;
+    		}
+    		
+    		//See if we can handle this type 
     		Log.i(TAG, "Content Type: " + ctype );
-    		if (ctype.contains(AUDIO_MIME)){
+    		if (ctype.contains(AUDIO_MIME) || ctype.equals("")){
     			
     			String temp = urlConn.getHeaderField(BITERATE_HEADER);
     			Log.i(TAG, "Bitrate: " + temp );
@@ -88,14 +218,14 @@ public class StreamingMediaPlayer {
     		} else {
     			Log.e(TAG, "Does not look like we can play this audio type: " + ctype);
     			Log.e(TAG, "Or we could not connect to audio");
-    			Toast.makeText(context, "myNPR can not play this audio type: " + ctype , Toast.LENGTH_LONG).show();
+    			//a.handler.sendEmptyMessage(PlayListTab.TROUBLEWITHAUDIO);
     			stop();
     			return;
     		}
     	} catch (IOException ioe) {
     		Log.e( TAG, "Could not connect to " +  mediaUrl );
     		stop();
-    		Toast.makeText(context, "Could not connect to " +  mediaUrl , Toast.LENGTH_LONG).show();
+    		//a.handler.sendEmptyMessage(PlayListTab.TROUBLEWITHAUDIO);
     		return;
     	} 
     	
@@ -124,10 +254,11 @@ public class StreamingMediaPlayer {
     public void downloadAudioIncrement(String mediaUrl) throws IOException {
     	final String TAG = "downloadAudioIncrement";
 
-    	URLConnection cn = new URL(mediaUrl).openConnection(); 
-    	cn.setConnectTimeout(1000 * 30);
-        cn.connect();   
-        stream = cn.getInputStream();
+    	//URLConnection cn = new URL(mediaUrl).openConnection(); 
+    	//cn.setConnectTimeout(1000 * 30);
+    	//cn.setReadTimeout(1000 * 15);
+        //cn.connect();   
+        stream = urlConn.getInputStream();
         if (stream == null) {
         	Log.e(TAG, "Unable to create InputStream for mediaUrl: " + mediaUrl);
         }
@@ -152,10 +283,10 @@ public class StreamingMediaPlayer {
         		Log.e(TAG, e.toString());
         		if (stream != null){
         			Log.i(TAG, "Bad read. Let's try to reconnect to source and continue downloading");
-        			cn = new URL(mediaUrl).openConnection(); 
-        			cn.setConnectTimeout(1000 * 30);
-        	        cn.connect();   
-        	        stream = cn.getInputStream();
+        			urlConn = new URL(mediaUrl).openConnection(); 
+        			urlConn.setConnectTimeout(1000 * 30);
+        			urlConn.connect();   
+        	        stream = urlConn.getInputStream();
         	        numread = stream.read(buf);
         		}
         	}
@@ -215,10 +346,10 @@ public class StreamingMediaPlayer {
     			        			try {
     			        				Log.v(TAG, "Sleep for a moment");
     			        				//Spin the spinner
-    			        				PlayListTab a = (PlayListTab) context ;
-    			        				a.handler.sendEmptyMessage(PlayListTab.SPIN);
+    			        				//PlayListTab a = (PlayListTab) context ;
+    			        				//a.handler.sendEmptyMessage(PlayListTab.SPIN);
     			        				Thread.sleep(1000 * 15);
-    			        				a.handler.sendEmptyMessage(PlayListTab.STOPSPIN);
+    			        				//a.handler.sendEmptyMessage(PlayListTab.STOPSPIN);
     			        				waitingForPlayer = true;
     			        			} catch (InterruptedException e) {
     			        				Log.e(TAG, e.toString());
@@ -295,40 +426,40 @@ public class StreamingMediaPlayer {
     	MediaPlayer mp = mediaplayers.get(0);
     	Log.i(TAG,"Start Player");
     	mp.start(); 
-    	PlayListTab a = (PlayListTab) context;
-
-    	a.handler.sendEmptyMessage(PlayListTab.STOPSPIN);
-    	//ImageView spinner = (ImageView) a.findViewById(R.id.process); 
-		//spinner.clearAnimation();
-    	
+    	//PlayListTab a = (PlayListTab) context;
+    	//a.handler.sendEmptyMessage(PlayListTab.STOPSPIN);
+    		
     }
     
     //Stop Audio
     public void stop(){
     	String TAG = "STOP";
-    	Log.i(TAG,"Stop Player");
-    	PlayListTab a = (PlayListTab) context;
+    	Log.i(TAG,"Entry");
+    	//PlayListTab a = (PlayListTab) context;
     	try {
     		if (! mediaplayers.isEmpty() ){
     			MediaPlayer mp = mediaplayers.get(0);
     			if (mp.isPlaying()){
+    				Log.i(TAG,"Stop Player");
     				mp.pause();
     			}
     		}
     		
     		if (stream != null){
+    			Log.i(TAG,"Close stream");
     			stream.close();
     		}
     		stream = null;
     		
-    		a.handler.sendEmptyMessage(PlayListTab.STOP);
+    		stopSelf();
+    		//a.handler.sendEmptyMessage(PlayListTab.STOP);
 
     	} catch (ArrayIndexOutOfBoundsException e) {
     		Log.e(TAG, "No items in Media player List");
-    		a.handler.sendEmptyMessage(PlayListTab.STOP);
+    		//a.handler.sendEmptyMessage(PlayListTab.STOP);
     	} catch (IOException e) {
     		Log.e(TAG, "error closing open connection");
-    		a.handler.sendEmptyMessage(PlayListTab.STOP);
+    		//a.handler.sendEmptyMessage(PlayListTab.STOP);
     	}
     }
 

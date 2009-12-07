@@ -96,7 +96,7 @@ public class ImageHelper {
     				URLConnection conn = aURL.openConnection();
     				conn.setConnectTimeout(1000 * 5);
     				conn.setReadTimeout(1000 * 5);
-    				conn.connect();
+    				//conn.connect();
     				Log.i(TAG, "grabbing " + url );
     				InputStream is = conn.getInputStream(); 
     				BufferedInputStream bis = new BufferedInputStream(is, 8192);
