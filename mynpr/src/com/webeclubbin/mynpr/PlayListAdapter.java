@@ -11,7 +11,7 @@ import android.widget.ArrayAdapter;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
-
+//Display playlist information
 public class PlayListAdapter extends ArrayAdapter<String> {
 
 	Activity context;  
