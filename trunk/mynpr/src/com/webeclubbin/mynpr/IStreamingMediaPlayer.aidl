@@ -14,4 +14,7 @@ interface IStreamingMediaPlayer {
 	void startAudio();
 	//Stop playing audio
 	void stopAudio();
+	//Return current status of streaming service
+	int checkStatus();
+	
 }

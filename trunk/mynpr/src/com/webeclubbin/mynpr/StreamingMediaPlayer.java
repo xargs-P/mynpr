@@ -55,6 +55,7 @@ public class StreamingMediaPlayer extends Service {
     private String audiourl = null;
     
     private Intent startingIntent = null;
+    private int currentStatus = -1;
 
     //This object will allow other processes to interact with our service
     private final IStreamingMediaPlayer.Stub ourBinder = new IStreamingMediaPlayer.Stub(){
@@ -108,6 +109,17 @@ public class StreamingMediaPlayer extends Service {
     	public void stopAudio() {
     		Log.i(TAG, "stopAudio" );
     		stop();
+    	}
+    	
+    	//Return current status of streaming service
+    	public int checkStatus() {
+    		int tempstat = currentStatus;
+    		if ( tempstat != -1 ) {
+    			//reset currentStatus back to normal since someone already
+    			//checked the status by calling this method
+    			currentStatus = -1;
+    		}
+    		return tempstat;
     	}
     };
     
@@ -191,14 +203,14 @@ public class StreamingMediaPlayer extends Service {
         int bitrate = 56;
         
         //PlayListTab a = (PlayListTab) context ;
-        //a.handler.sendEmptyMessage(PlayListTab.START);
+        currentStatus = PlayListTab.START;
         
     	try {
     		url = new URL(mediaUrl);
     		urlConn = (HttpURLConnection)url.openConnection();
     		urlConn.setReadTimeout(1000 * 5);
     		urlConn.setConnectTimeout(1000 * 5);
-    		//urlConn.connect();
+
     		String ctype = urlConn.getContentType () ;
     		if (ctype == null){
     			ctype = "";
@@ -218,14 +230,14 @@ public class StreamingMediaPlayer extends Service {
     		} else {
     			Log.e(TAG, "Does not look like we can play this audio type: " + ctype);
     			Log.e(TAG, "Or we could not connect to audio");
-    			//a.handler.sendEmptyMessage(PlayListTab.TROUBLEWITHAUDIO);
+    			currentStatus = PlayListTab.TROUBLEWITHAUDIO;
     			stop();
     			return;
     		}
     	} catch (IOException ioe) {
     		Log.e( TAG, "Could not connect to " +  mediaUrl );
     		stop();
-    		//a.handler.sendEmptyMessage(PlayListTab.TROUBLEWITHAUDIO);
+    		currentStatus = PlayListTab.TROUBLEWITHAUDIO;
     		return;
     	} 
     	
@@ -289,6 +301,9 @@ public class StreamingMediaPlayer extends Service {
         	        stream = urlConn.getInputStream();
         	        numread = stream.read(buf);
         		}
+        	} catch (NullPointerException e) {
+        		//Let's get out of here
+        		break;
         	}
         	
             if (numread <= 0) {  
@@ -346,10 +361,10 @@ public class StreamingMediaPlayer extends Service {
     			        			try {
     			        				Log.v(TAG, "Sleep for a moment");
     			        				//Spin the spinner
-    			        				//PlayListTab a = (PlayListTab) context ;
-    			        				//a.handler.sendEmptyMessage(PlayListTab.SPIN);
+    			        				
+    			        				currentStatus = PlayListTab.SPIN;
     			        				Thread.sleep(1000 * 15);
-    			        				//a.handler.sendEmptyMessage(PlayListTab.STOPSPIN);
+    			        				currentStatus = PlayListTab.STOPSPIN;
     			        				waitingForPlayer = true;
     			        			} catch (InterruptedException e) {
     			        				Log.e(TAG, e.toString());
@@ -417,6 +432,8 @@ public class StreamingMediaPlayer extends Service {
     	playedcounter++;
     }
     
+    
+    
     //Start first audio clip
     private void startMediaPlayer() {
     	String TAG = "startMediaPlayer";
@@ -426,8 +443,8 @@ public class StreamingMediaPlayer extends Service {
     	MediaPlayer mp = mediaplayers.get(0);
     	Log.i(TAG,"Start Player");
     	mp.start(); 
-    	//PlayListTab a = (PlayListTab) context;
-    	//a.handler.sendEmptyMessage(PlayListTab.STOPSPIN);
+    	
+    	currentStatus = PlayListTab.STOPSPIN;
     		
     }
     
@@ -451,15 +468,16 @@ public class StreamingMediaPlayer extends Service {
     		}
     		stream = null;
     		
+    		currentStatus = PlayListTab.STOP;
     		stopSelf();
-    		//a.handler.sendEmptyMessage(PlayListTab.STOP);
+    		
 
     	} catch (ArrayIndexOutOfBoundsException e) {
     		Log.e(TAG, "No items in Media player List");
-    		//a.handler.sendEmptyMessage(PlayListTab.STOP);
+    		currentStatus = PlayListTab.STOP;
     	} catch (IOException e) {
     		Log.e(TAG, "error closing open connection");
-    		//a.handler.sendEmptyMessage(PlayListTab.STOP);
+    		currentStatus = PlayListTab.STOP;
     	}
     }
 
