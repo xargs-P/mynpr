@@ -35,6 +35,8 @@ import android.os.Handler;
 import android.os.Message;
 import android.util.Log;
 import android.view.KeyEvent;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.view.View.OnKeyListener;
@@ -59,7 +61,10 @@ public class SearchStationTab extends Activity implements Runnable {
 	
 	private String searchstationurl = "http://api.npr.org/stations.php?apiKey=" ;
 	private String searchstationurlwhole = "";
-	//private final String nprliveurl = "http://stream.npr.org:8002/listen.pls";
+	
+	final private int MENU_LIVE_NPR = 0;
+	private final String NPRLIVEURL = "http://www.npr.org/streams/mp3/nprlive24.pls";
+	
 	final String STATIONLISTVIEW = "STATIONLISTVIEW";
 	final String HIDESEARCH = "HIDESEARCH";
 
@@ -426,25 +431,6 @@ public class SearchStationTab extends Activity implements Runnable {
     	super.onSaveInstanceState(instanceState);
     }
     
-    /** Set up Menu for this Tab */
-    /*@Override
-    public boolean onCreateOptionsMenu (Menu menu) {
-    	menu.add(0, MENU_LIVE_NPR, Menu.NONE, "Launch NPR.org Live Stream").setIcon(com.webeclubbin.mynpr.R.drawable.npr2);;
-        return true;
-    }*/
-    
-    /* Handles item selections */
-    /*@Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-        switch (item.getItemId()) {
-        case MENU_LIVE_NPR:
-        	String [] list = parsePLS(nprliveurl, maincontext);
-        	launchhelper(list, maincontext, null, null, null);
-            return true;
-        }
-        return false;
-    }*/
-    
 	//Launch URL user selected and display dialog if more than one choice
 	public static void launchhelper( String[] s , final Activity a, final Dialog previousdialog, final String station, final String logo) {
 		//TODO Let users select which link they want to play
@@ -453,6 +439,12 @@ public class SearchStationTab extends Activity implements Runnable {
 		
 		Uri uri = null;
         Intent i = null;
+        
+        if (s == null){
+        	Log.i(TAG, "No data received" );
+			Toast.makeText(a, "Unable to grab audio. Please try again.", Toast.LENGTH_LONG).show();
+			return;
+        }
         
 		if (s.length == 1){
 			String playthis = s[0];
@@ -571,5 +563,22 @@ public class SearchStationTab extends Activity implements Runnable {
 		}
 	}
 	
-	
+    /** Set up Menu for this Tab */
+    @Override
+    public boolean onCreateOptionsMenu (Menu menu) {
+    	menu.add(0, MENU_LIVE_NPR, Menu.NONE, "Launch NPR.org Live Stream").setIcon(com.webeclubbin.mynpr.R.drawable.npr2);;
+        return true;
+    }
+    
+    /* Handles item selections */
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        switch (item.getItemId()) {
+        case MENU_LIVE_NPR:
+        	String [] list = SearchStationTab.parsePLS(NPRLIVEURL, maincontext);
+        	SearchStationTab.launchhelper(list, maincontext, null, "NPR.org", "http://media.npr.org/chrome/nprlogo_24.gif");
+            return true;
+        }
+        return false;
+    }
 }
