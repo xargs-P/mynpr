@@ -32,7 +32,7 @@ import android.widget.Toast;
 
 public class PlayListTab extends Activity implements Runnable, ServiceConnection {
 	private ListView lv = null;
-	//final static public String AUDIO_MIME =  "audio/mpeg";
+
 	final static public String HTML_MIME =  "html";
 	final static public String STATION = "STATION";
 	final static public String LOGO = "LOGO";
@@ -40,9 +40,7 @@ public class PlayListTab extends Activity implements Runnable, ServiceConnection
 	final public String PLAYLIST = "PLAYLIST";
 	
 	private IntentFilter ourintentfilter ; 
-	final private int MENU_LIVE_NPR = 0;
-	private final String NPRLIVEURL = "http://www.npr.org/streams/mp3/nprlive24.pls";
-	
+
 	private PlayList playlist = new PlayList(this);
 	private Activity maincontext = null;
 	
@@ -58,8 +56,9 @@ public class PlayListTab extends Activity implements Runnable, ServiceConnection
 	
 	private boolean playstatus = false;
 	
-	//private final String IMAGES = "IMAGES";
-	
+	private final int MENU_CLEAN_ALL = 0; 
+
+	public static final String MSG = "MESSAGE";
 	public static final int UPDATE = 0;
 	public static final int STOP = 1;
 	public static final int START = 2;
@@ -69,12 +68,13 @@ public class PlayListTab extends Activity implements Runnable, ServiceConnection
 	
 	private IStreamingMediaPlayer.Stub streamerBinder = null;
 	
-
     private BroadcastReceiver playListReceiver = new BroadcastReceiver() {
 	        @Override
 	        public void onReceive(Context context, Intent intent) {
 	        	final String TAG = "BroadcastReceiver - onReceive";
 
+	        	String temps = intent.getStringExtra(STATION);
+	        	if (temps != null) {
 	  	        	//Grab Image and/or Station Name from intent extra
 	  	        	Log.i(TAG, "STATION " + intent.getStringExtra(STATION));
 	  	        	Log.i(TAG, "LOGO " + intent.getStringExtra(LOGO));
@@ -89,6 +89,15 @@ public class PlayListTab extends Activity implements Runnable, ServiceConnection
 		  	        //TODO scroll text? Marquee?
 		  	        //Scroller s = new Scroller(context , new AnticipateOvershootInterpolator (0) );
 		  	        //content.setScroller(s);
+	        	} else {
+	        		int message = intent.getIntExtra(MSG, -1);
+	        		if (message != -1){
+	        			Log.i(TAG, "Send status update");
+	        			handler.sendEmptyMessage(message);
+	        		} else {
+	        			Log.i(TAG, "NO update to Send: -1");
+	        		}
+	        	}
 	        }
     };
 
@@ -107,13 +116,6 @@ public class PlayListTab extends Activity implements Runnable, ServiceConnection
     	} catch (RemoteException e) {
                     Log.e(TAG, "ServiceConnection.onServiceConnected", e);
         }
-    	/*andCellTrackService = IAndCellTrackServiceBase.Stub.asInterface((IBinder)service);
-    	try {
-    		andCellTrackService.registerObserver(cellTrackStateListener);
-    		//onStateChanged(andCellTrackService.getCellInfo());
-        } catch (RemoteException e) {
-                    Log.e(TAG, "ServiceConnection.onServiceConnected", e);
-        }*/
     }
     
     @Override
@@ -122,12 +124,6 @@ public class PlayListTab extends Activity implements Runnable, ServiceConnection
     	Log.i(TAG, "START");
     	Log.i(TAG,"Null out binder");
     	streamerBinder = null;
-    	/*try {
-    		andCellTrackService.unregisterObserver(cellTrackStateListener);
-        } catch (RemoteException e) {
-        	Log.e(TAG, "AndCellTrack.ServiceConnection.onServiceDisconnected", e);
-        }*/
-
     }
 
        
@@ -165,15 +161,20 @@ public class PlayListTab extends Activity implements Runnable, ServiceConnection
     			   if (p == true){
     				   //Stop audio
     				   Log.i(TAG, "Stop audio");
-    				   try {
-    					   streamerBinder.stopAudio();
-    				   } catch (RemoteException e) {
-    					   Log.e(TAG,  e.toString());
-    				   }
+    				   stopplayer();
     			   }
-     		   } 
+     		   } else {
+     			   Log.i(TAG, "Play audio");
+
+     			   if ( ! currentURL.equals("") ){
+     				   play(currentStation, currentURL);
+     			   } else {
+     				   Log.i(TAG, "Skip Playing audio. No link to play.");
+     			   }
+
+     		   }
      		   
-     		   if (playstatus == false) {
+     		   /*if (playstatus == false) {
      			  //play audio
       			  Log.i(TAG, "Play audio");
 
@@ -182,7 +183,7 @@ public class PlayListTab extends Activity implements Runnable, ServiceConnection
            		  } else {
            			Log.i(TAG, "Skip Playing audio. No link to play.");
            		  }
-     		   }
+     		   }*/
      		   
      	   }
         }); 
@@ -240,28 +241,6 @@ public class PlayListTab extends Activity implements Runnable, ServiceConnection
         	}
 
         } */
-		
-		Runnable r = new Runnable() {   
-	        public void run() {   
-	        	String TAG = "Stream Checker";
-	        	while (true){
-	        		if (streamerBinder != null){
-	        			int stat = -1;
-	        			try {
-	        				stat = streamerBinder.checkStatus();
-	        			} catch (RemoteException e) {
-	        				Log.e(TAG,e.toString());
-	        			}
-	        			if (stat  != -1 ) {
-	        				Log.i(TAG, "We have a new status: " + stat);
-	        				handler.sendEmptyMessage(stat);
-	        			}
-	        		}
-	        	}
-	        }   
-	    };   
-	    
-	    new Thread(r).start();
 
     }
  
@@ -287,12 +266,11 @@ public class PlayListTab extends Activity implements Runnable, ServiceConnection
         		}
         	} else if (msg.what == PlayListTab.STOP){
         		//If we are sending 1, then the audio stopped playing
-        		Log.i(TAG, "Set playstatus = stop");
-        		setplaystatus( false );
-        		turnOffNotify();
+        		Log.i(TAG, "Got 'stop' message");
+        		stopplayer() ;
         	} else if (msg.what == PlayListTab.START){
         		//If we are sending 2, then the audio started playing
-        		Log.i(TAG, "Set playstatus = start");
+        		Log.i(TAG, "Got 'start' message");
         		setplaystatus( true );
         		turnOnNotify();
         	} else if (msg.what == PlayListTab.SPIN){
@@ -310,12 +288,15 @@ public class PlayListTab extends Activity implements Runnable, ServiceConnection
         		//Trouble with Audio downloading
         		Log.i(TAG, "Send screen message about trouble with audio");
         		Toast.makeText(maincontext, "Could not connect with Audio Stream" , Toast.LENGTH_LONG).show();
+        		//turnOffNotify();
+        		stopplayer() ;
         	}
         }
     };
     
     //Set play status
     private void setplaystatus( boolean p) {
+    	String TAG = "setplaystatus";
     	playstatus = p;
     	
     	//If set to false . Reset screen
@@ -326,8 +307,6 @@ public class PlayListTab extends Activity implements Runnable, ServiceConnection
     		ImageButton button_playstatus = (ImageButton) findViewById(com.webeclubbin.mynpr.R.id.playstatus);
     		button_playstatus.setImageResource(com.webeclubbin.mynpr.R.drawable.play);
 			button_playstatus.postInvalidate();
-			MyNPR parent = (MyNPR) maincontext.getParent();
-			parent.unbindService (this);
     	} else {
     		//Audio started
     		button_playstatus.setImageResource(com.webeclubbin.mynpr.R.drawable.stop);
@@ -344,6 +323,7 @@ public class PlayListTab extends Activity implements Runnable, ServiceConnection
     	currentStation = ourstation;
     	currentURL = audiolink;
     	//Stop service
+    	Log.i(TAG, "Check to see if we need to stop the player");
     	if (streamerBinder != null ){
     		boolean p = false;
     		try {
@@ -352,13 +332,9 @@ public class PlayListTab extends Activity implements Runnable, ServiceConnection
     			Log.e(TAG, e.toString());
     		}
     		if (p == true){
-    			try {
-    				streamerBinder.stopAudio();
-    			} catch (RemoteException e){
-    				Log.e(TAG, e.toString());
-    			}
+    			stopplayer() ;
     		}
-		} 
+		}    
     	
     	Log.i(TAG,"Start Spinner");
     	handler.sendEmptyMessage(PlayListTab.SPIN);
@@ -377,6 +353,25 @@ public class PlayListTab extends Activity implements Runnable, ServiceConnection
 		MyNPR parent = (MyNPR) maincontext.getParent();
 		parent.bindService (i, this , Context.BIND_AUTO_CREATE);
 	    
+    }
+    
+    private void stopplayer(){
+    	String TAG = "stopplayer";
+    	
+    	try {
+    		if (streamerBinder != null){
+    			Log.i(TAG, "Tell player to stop");
+    			streamerBinder.stopAudio();
+    		}
+		} catch (RemoteException e) {
+			   Log.e(TAG,  e.toString());
+		}
+    	
+    	Log.i(TAG, "set status");
+    	setplaystatus( false );
+    	
+    	Log.i(TAG, "Turn off notify");
+    	turnOffNotify();
     }
     
     private void updatescreen(){
@@ -456,7 +451,7 @@ public class PlayListTab extends Activity implements Runnable, ServiceConnection
     /** Set up Menu for this Tab */
     @Override
     public boolean onCreateOptionsMenu (Menu menu) {
-    	menu.add(0, MENU_LIVE_NPR, Menu.NONE, "Launch NPR.org Live Stream").setIcon(com.webeclubbin.mynpr.R.drawable.npr2);;
+    	menu.add(0, MENU_CLEAN_ALL, Menu.NONE, "Clear Playlist").setIcon(android.R.drawable.ic_menu_delete);;
         return true;
     }
     
@@ -464,12 +459,24 @@ public class PlayListTab extends Activity implements Runnable, ServiceConnection
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         switch (item.getItemId()) {
-        case MENU_LIVE_NPR:
-        	String [] list = SearchStationTab.parsePLS(NPRLIVEURL, maincontext);
-        	SearchStationTab.launchhelper(list, maincontext, null, "NPR.org", "http://media.npr.org/chrome/nprlogo_24.gif");
+        case MENU_CLEAN_ALL:
+        	clearlist();
             return true;
         }
         return false;
+    }
+    
+    //Clear playlist
+    private void clearlist(){
+    	String TAG = "clearlist";
+    	
+    	Log.i(TAG, "clear playlist");
+    	//Delete file
+    	playlist.deleteList();
+		
+    	//Refresh screen
+    	Log.i(TAG, "update screen");
+    	updatescreen();
     }
     
     //Set up Notify for user to click on
@@ -484,9 +491,7 @@ public class PlayListTab extends Activity implements Runnable, ServiceConnection
     	Log.i(TAG, "Instantiate");
     	//Instantiate the Notification:
     	int icon = com.webeclubbin.mynpr.R.drawable.processing2;
-    	//TextView station = (TextView) findViewById(com.webeclubbin.mynpr.R.id.playingstation);
-    	//TextView content = (TextView) findViewById(com.webeclubbin.mynpr.R.id.playingcontent);
-    	
+
     	CharSequence tickerText = currentStation ;
     	long when = System.currentTimeMillis();
 	    
@@ -497,8 +502,7 @@ public class PlayListTab extends Activity implements Runnable, ServiceConnection
     	CharSequence contentTitle = currentStation;
     	CharSequence contentText = currentURL;
     	Intent notificationIntent = new Intent(maincontext, MyNPR.class);
-    	//TODO maybe make broadcast for this.
-    	//TODO also we may need to make this into a service all together
+
     	PendingIntent contentIntent = PendingIntent.getActivity(this, 0, notificationIntent, 0);
     	//Put both flags into "flags" using the 
     	notification.flags |= Notification.FLAG_ONGOING_EVENT | Notification.FLAG_NO_CLEAR;
@@ -514,6 +518,11 @@ public class PlayListTab extends Activity implements Runnable, ServiceConnection
     private void turnOffNotify() {
     	String TAG = "turnOffNotify";
     	
+    	MyNPR parent = (MyNPR) maincontext.getParent();
+		Log.i(TAG, "unbind from service");
+		parent.unbindService (this);
+		streamerBinder = null;
+		
     	Log.i(TAG, "Grab NotificationManager");
     	//Get a reference to the NotificationManager
     	String ns = Context.NOTIFICATION_SERVICE;
@@ -522,5 +531,15 @@ public class PlayListTab extends Activity implements Runnable, ServiceConnection
     	Log.i(TAG, "Cancel Notification");
     	//Cancel Notification:
     	nm.cancel(MyNPR.PLAYING_ID);
+    }
+    
+    //Clean up work
+    @Override
+    public void onDestroy(){
+    	super.onDestroy();
+    	String TAG = "onDestroy()";
+    	//Clear any notifications we may have.
+    	Log.i(TAG, "clear any hanging around notifications");
+    	turnOffNotify();
     }
 }

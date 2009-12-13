@@ -27,7 +27,7 @@ public class MyNPR extends TabActivity {
 	public static final String STREAM = "myNPR_Stream";
 	final static String packagename = "com.webeclubbin.mynpr";
 	public final static int PLAYING_ID = 1;
-	//final static String apikey = "MDAzMzcxNzY2MDEyNDAyODA5MTU1YTJmYw001";
+	
 	TabHost tabHost = null;
 
 	Bundle b = null;

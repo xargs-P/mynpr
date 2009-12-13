@@ -197,13 +197,9 @@ public class StreamingMediaPlayer extends Service {
     public void startStreaming(final String mediaUrl) throws IOException {
     	
     	final String TAG = "startStreaming";
-    	
-    	//URL url;
-        //URLConnection urlConn = null;
         int bitrate = 56;
         
-        //PlayListTab a = (PlayListTab) context ;
-        currentStatus = PlayListTab.START;
+        sendMessage( PlayListTab.START );
         
     	try {
     		url = new URL(mediaUrl);
@@ -230,14 +226,14 @@ public class StreamingMediaPlayer extends Service {
     		} else {
     			Log.e(TAG, "Does not look like we can play this audio type: " + ctype);
     			Log.e(TAG, "Or we could not connect to audio");
-    			currentStatus = PlayListTab.TROUBLEWITHAUDIO;
+    			sendMessage (PlayListTab.TROUBLEWITHAUDIO);
     			stop();
     			return;
     		}
     	} catch (IOException ioe) {
     		Log.e( TAG, "Could not connect to " +  mediaUrl );
+    		sendMessage( PlayListTab.TROUBLEWITHAUDIO);
     		stop();
-    		currentStatus = PlayListTab.TROUBLEWITHAUDIO;
     		return;
     	} 
     	
@@ -251,6 +247,7 @@ public class StreamingMediaPlayer extends Service {
 	        		downloadAudioIncrement(mediaUrl);
 	            } catch (IOException e) {
 	            	Log.e(TAG, "Unable to initialize the MediaPlayer for Audio Url = " + mediaUrl, e);
+	            	sendMessage( PlayListTab.TROUBLEWITHAUDIO);
 	            	stop();
 	            	return;
 	            }   
@@ -362,16 +359,17 @@ public class StreamingMediaPlayer extends Service {
     			        				Log.v(TAG, "Sleep for a moment");
     			        				//Spin the spinner
     			        				
-    			        				currentStatus = PlayListTab.SPIN;
+    			        				sendMessage( PlayListTab.SPIN ) ;
     			        				Thread.sleep(1000 * 15);
-    			        				currentStatus = PlayListTab.STOPSPIN;
+    			        				sendMessage( PlayListTab.STOPSPIN );
     			        				waitingForPlayer = true;
     			        			} catch (InterruptedException e) {
     			        				Log.e(TAG, e.toString());
     			        			}
     			        		} else {
     			        			Log.e(TAG, "Timeout occured waiting for another media player");
-    			        			Toast.makeText(context, "Trouble downloading audio. :-(" , Toast.LENGTH_LONG).show();
+    			        			//Toast.makeText(context, "Trouble downloading audio. :-(" , Toast.LENGTH_LONG).show();
+    			        			sendMessage( PlayListTab.TROUBLEWITHAUDIO);
     			        			stop();
     			        			
     			        			leave = true;
@@ -411,9 +409,11 @@ public class StreamingMediaPlayer extends Service {
 		        	}
 	        	} catch  (IllegalStateException	e) {
 	        		Log.e(TAG, e.toString());
+	        		sendMessage( PlayListTab.TROUBLEWITHAUDIO);
 	        		stop();
 	        	} catch  (IOException	e) {
 	        		Log.e(TAG, e.toString());
+	        		sendMessage( PlayListTab.TROUBLEWITHAUDIO);
 	        		stop();
 	        	}
 	        	
@@ -444,7 +444,7 @@ public class StreamingMediaPlayer extends Service {
     	Log.i(TAG,"Start Player");
     	mp.start(); 
     	
-    	currentStatus = PlayListTab.STOPSPIN;
+    	sendMessage(PlayListTab.STOPSPIN);
     		
     }
     
@@ -452,7 +452,7 @@ public class StreamingMediaPlayer extends Service {
     public void stop(){
     	String TAG = "STOP";
     	Log.i(TAG,"Entry");
-    	//PlayListTab a = (PlayListTab) context;
+    	
     	try {
     		if (! mediaplayers.isEmpty() ){
     			MediaPlayer mp = mediaplayers.get(0);
@@ -468,16 +468,16 @@ public class StreamingMediaPlayer extends Service {
     		}
     		stream = null;
     		
-    		currentStatus = PlayListTab.STOP;
+    		//sendMessage(PlayListTab.STOP);
     		stopSelf();
     		
 
     	} catch (ArrayIndexOutOfBoundsException e) {
     		Log.e(TAG, "No items in Media player List");
-    		currentStatus = PlayListTab.STOP;
+    		sendMessage(PlayListTab.STOP);
     	} catch (IOException e) {
     		Log.e(TAG, "error closing open connection");
-    		currentStatus = PlayListTab.STOP;
+    		sendMessage(PlayListTab.STOP);
     	}
     }
 
@@ -497,6 +497,16 @@ public class StreamingMediaPlayer extends Service {
     	}
     	
     	return result;
+    }
+    
+    //Send Message to Playlist
+    private void sendMessage(int m){
+    	String TAG = "sendMessage";
+    	Intent i = new Intent(MyNPR.tPLAY);
+
+    	i.putExtra(PlayListTab.MSG, m);
+    	Log.i(TAG, "Broadcast Message intent");
+    	context.sendBroadcast (i) ;
     }
     
 }

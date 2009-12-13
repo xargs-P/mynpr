@@ -4,12 +4,12 @@ import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
-import java.io.Serializable;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Set;
@@ -44,9 +44,20 @@ public class PlayList  {
 		if ( plist.containsKey(station) ) {
 			Log.i(TAG, "add url, station already here");
 			Vector<String> v = (Vector<String>) plist.get(station);
-			v.add(url);
-			plist.put(station, v);
 			
+			Log.i(TAG, "urls : " + v.size());
+			String[] t = {""} ;
+			String[] temp = v.toArray(t);
+			boolean alreadyHere = false;
+			for (int i = 0; i < v.size() ; i++){
+				if ( url.equals(temp[i])){
+					alreadyHere = true;
+				}
+			}
+			if (alreadyHere == false){
+				v.add(url);
+				plist.put(station, v);
+			}
 		} else {
 			Log.i(TAG, "add station and url");
 			Vector<String> v = new Vector<String>(); 
@@ -180,5 +191,19 @@ public class PlayList  {
     	return true;
 	}
 	
+	//Delete list
+	public void deleteList() {
+		String TAG = "deleteList";
+		
+    	Log.i(TAG, "remove: " + playlistfile );
+    	context.deleteFile(playlistfile);
+    	
+    	//Reset variables
+    	Log.i(TAG, "Reset variables");
+    	plist = new HashMap<String, Vector<String> >();
+    	logos = new HashMap<String, String>();
+    	
+    	saved = true;
+	}
 	
 }

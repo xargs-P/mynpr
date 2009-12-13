@@ -3,7 +3,7 @@ package com.webeclubbin.mynpr;
 
 // Interface for Streaming Player.
 interface IStreamingMediaPlayer {
-    
+      
     // Returns Currently Station Name
     String getStation();
     // Returns Currently Playing audio url
