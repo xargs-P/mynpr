@@ -4,7 +4,6 @@ import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
-import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -118,7 +117,7 @@ public class PlayList  {
 	
 	//Load data from file
 	public boolean loadfromfile(){
-		String TAG = "Load Playlist to File";
+		String TAG = "Load Playlist from File";
 		try {
     		FileInputStream fis = context.openFileInput(playlistfile);
     		if (fis == null){
@@ -204,6 +203,47 @@ public class PlayList  {
     	logos = new HashMap<String, String>();
     	
     	saved = true;
+	}
+	
+	//Dump data so we can save in a Bundle
+	public String [] dumpDataOut() {
+		String TAG = "dumpDataOut";
+		
+		Log.i(TAG, "Start");
+		
+    	Vector<String> lineofdata = new Vector<String>();
+    	String [] s = getStations();
+        //Grab data out
+        for (int i = 0; i <  s.length; i++)   {
+        	Log.i(TAG, s[i]);
+        	lineofdata.add(  s[i] + SPLITTERSTATION + logos.get(s[i]) );
+        	
+        	String [] a = getUrls(s[i]);
+        	for (int y = 0; y <  a.length; y++) {
+        		lineofdata.add( s[i] + SPLITTERAUDIO + a[y] );
+        	}
+
+        }
+        return lineofdata.toArray(s);
+	}
+	
+	//Load playlist object from data dump
+	public void dumpDataIn(String [] d) {
+		String TAG = "dumpDataIn";
+		
+		Log.i(TAG, "Start");
+		
+		for (int i = 0; i < d.length; i++)   {
+        	Log.i(TAG,d[i]);
+        	if ( d[i].contains(SPLITTERAUDIO) ) {
+        		String [] s = Pattern.compile(SPLITTERAUDIO).split(d[i]);
+        		addUrl(s[0], s[1]);
+        	} else if ( d[i].contains(SPLITTERSTATION) ) {
+        		String [] s = Pattern.compile(SPLITTERSTATION).split(d[i]);
+        		addStation(s[0], s[1]);
+        	}
+        }
+		saved = false;
 	}
 	
 }

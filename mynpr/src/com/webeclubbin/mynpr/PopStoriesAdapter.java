@@ -31,6 +31,8 @@ public class PopStoriesAdapter extends ArrayAdapter<String> {
         if (imagehelper != null){
         	Log.i(TAG,"Store imagehelper we received");
         	this.im = imagehelper;
+        } else {
+        	im = new ImageHelper(context);
         }
     }  
 

@@ -22,7 +22,6 @@ import android.media.AudioManager;
 import android.media.MediaPlayer;
 import android.os.IBinder;
 import android.util.Log;
-import android.widget.Toast;
 
 /**
  * MediaPlayer does not yet support "Shoutcast"-like streaming from external URLs so this class provides a pseudo-streaming function
@@ -55,7 +54,7 @@ public class StreamingMediaPlayer extends Service {
     private String audiourl = null;
     
     private Intent startingIntent = null;
-    private int currentStatus = -1;
+    //private int currentStatus = -1;
 
     //This object will allow other processes to interact with our service
     private final IStreamingMediaPlayer.Stub ourBinder = new IStreamingMediaPlayer.Stub(){
@@ -111,6 +110,7 @@ public class StreamingMediaPlayer extends Service {
     		stop();
     	}
     	
+    	/*
     	//Return current status of streaming service
     	public int checkStatus() {
     		int tempstat = currentStatus;
@@ -120,7 +120,7 @@ public class StreamingMediaPlayer extends Service {
     			currentStatus = -1;
     		}
     		return tempstat;
-    	}
+    	} */
     };
     
     @Override 
@@ -183,13 +183,7 @@ public class StreamingMediaPlayer extends Service {
     	
     	return ourBinder;
     }
-    
- 	/*public StreamingMediaPlayer(Context c) 
- 	{
- 		context = c;
- 		downloadingMediaFile = new File(context.getCacheDir(),DOWNFILE + counter);
- 		downloadingMediaFile.deleteOnExit();
-	}*/
+   
 	
     /**  
      * Progressivly download the media to a temporary location and update the MediaPlayer as new content becomes available.
@@ -204,7 +198,7 @@ public class StreamingMediaPlayer extends Service {
     	try {
     		url = new URL(mediaUrl);
     		urlConn = (HttpURLConnection)url.openConnection();
-    		urlConn.setReadTimeout(1000 * 5);
+    		urlConn.setReadTimeout(1000 * 10);
     		urlConn.setConnectTimeout(1000 * 5);
 
     		String ctype = urlConn.getContentType () ;
@@ -360,7 +354,10 @@ public class StreamingMediaPlayer extends Service {
     			        				//Spin the spinner
     			        				
     			        				sendMessage( PlayListTab.SPIN ) ;
+    			        				//Thread.currentThread().sleep(1000 * 15);
     			        				Thread.sleep(1000 * 15);
+    			        				
+    			        				
     			        				sendMessage( PlayListTab.STOPSPIN );
     			        				waitingForPlayer = true;
     			        			} catch (InterruptedException e) {

@@ -1,6 +1,6 @@
 package com.webeclubbin.mynpr;
 
-import java.io.IOException;
+import java.util.Set;
 
 import android.app.Activity;
 import android.app.Notification;
@@ -37,7 +37,9 @@ public class PlayListTab extends Activity implements Runnable, ServiceConnection
 	final static public String STATION = "STATION";
 	final static public String LOGO = "LOGO";
 	final static public String URL = "URL";
+	
 	final public String PLAYLIST = "PLAYLIST";
+	final public String IMAGES = "IMAGES";
 	
 	private IntentFilter ourintentfilter ; 
 
@@ -45,6 +47,7 @@ public class PlayListTab extends Activity implements Runnable, ServiceConnection
 	private Activity maincontext = null;
 	
 	private boolean updatescreen = true;
+	private boolean doNotStart = false;
 	private ImageHelper ih = null;
 
 	private Thread thread = null;
@@ -109,10 +112,22 @@ public class PlayListTab extends Activity implements Runnable, ServiceConnection
     	
     	try {
     		Log.i(TAG, "Is service playing audio? " + streamerBinder.playing() );
-    		if ( !  streamerBinder.playing() ){
+    		Log.i(TAG, "Do not start player? " + doNotStart );
+    		if ( streamerBinder.playing() == false  && doNotStart == false ){
     			//Start it up
     			 streamerBinder.startAudio();
-    		}
+    			 
+    		} else if (streamerBinder.playing()) {
+    			Log.i(TAG, "setup playing content on screen");
+				currentStation = streamerBinder.getStation();
+				currentURL = streamerBinder.getUrl();
+				TextView station = (TextView) findViewById(com.webeclubbin.mynpr.R.id.playingstation);
+				station.setText(currentStation + ": ");   
+				TextView content = (TextView) findViewById(com.webeclubbin.mynpr.R.id.playingcontent);
+				content.setText(currentURL);
+				setplaystatus( true );
+    		}  
+    		doNotStart = false;
     	} catch (RemoteException e) {
                     Log.e(TAG, "ServiceConnection.onServiceConnected", e);
         }
@@ -134,6 +149,7 @@ public class PlayListTab extends Activity implements Runnable, ServiceConnection
         
         final String TAG = "onCreate - PlayListTab";
         setContentView(com.webeclubbin.mynpr.R.layout.playlisttab);
+        
         maincontext = this;
 
         Log.i(TAG, "Setup IntentFilter");
@@ -174,30 +190,47 @@ public class PlayListTab extends Activity implements Runnable, ServiceConnection
 
      		   }
      		   
-     		   /*if (playstatus == false) {
-     			  //play audio
-      			  Log.i(TAG, "Play audio");
-
-           		  if ( ! currentURL.equals("") ){
-             		  play(currentStation, currentURL);
-           		  } else {
-           			Log.i(TAG, "Skip Playing audio. No link to play.");
-           		  }
-     		   }*/
-     		   
      	   }
         }); 
         
-        //Setup any saved views
-        handler.sendEmptyMessage(PlayListTab.SPIN);
+        
+        //Setup service connection
+        Intent in = new Intent(maincontext, StreamingMediaPlayer.class);
+        doNotStart = true;
+		Log.i(TAG,"Bind to our Streamer service");
+		MyNPR parent = (MyNPR) maincontext.getParent();
+		parent.bindService (in, this , Context.BIND_AUTO_CREATE);
+        
+        //Setup currently playing views
+        /*boolean p = false;
+		try {
+			if (streamerBinder != null){
+				Log.i(TAG, "Checking to see if we are currently playing");
+				p = streamerBinder.playing() ;
+			}
+			
+			if (p == true){
+				Log.i(TAG, "setup playing content on screen");
+				currentStation = streamerBinder.getStation();
+				currentURL = streamerBinder.getUrl();
+				TextView station = (TextView) findViewById(com.webeclubbin.mynpr.R.id.playingstation);
+				station.setText(currentStation + ": ");   
+				TextView content = (TextView) findViewById(com.webeclubbin.mynpr.R.id.playingcontent);
+				content.setText(currentURL);
+				setplaystatus( true );
+			}
+		} catch (RemoteException e) {
+			Log.e(TAG, e.toString());
+		}*/
+		
+	   
+		
+        
 		   
-		thread = new Thread(this);
-		thread.start();
-        /*if (savedInstanceState == null){
+		//thread = new Thread(this);
+		//thread.start();
+        if (savedInstanceState == null){
         	Log.i(TAG, "Bundle savedInstanceState is null.");
-        	
-        	handler.sendEmptyMessage(PlayListTab.SPIN);
-  		   
     		thread = new Thread(this);
     		thread.start();
         } else {
@@ -215,38 +248,30 @@ public class PlayListTab extends Activity implements Runnable, ServiceConnection
         	}
 	
         	ih = new ImageHelper(maincontext);
-        	ih.setImageStorage(savedInstanceState.getStringArray(IMAGES));
+        	//ih.setImageStorage(savedInstanceState.getStringArray(IMAGES));
         	
-        	byte[] b = savedInstanceState.getByteArray(PLAYLIST);
-        	if ( b != null) {
-        		try {     	    
-        	        // Deserialize from a byte array
-        			Log.i(TAG, "Deserialize Playlist from saved Bundle");
-        	        ObjectInputStream in = new ObjectInputStream(new ByteArrayInputStream(b));
-        	        playlist = (PlayList) in.readObject();
-        	        in.close();
-        	        
-        	        if ( playlist != null ) {
-        	        	//Update the list view
-        	        	Log.i(TAG, "Update screen with playlist");
-        	        	updatescreen();
-        	        } else {
-        	        	Log.i(TAG, "Skipping screen update, null playlist");
-        	        }
-        	    } catch (ClassNotFoundException e) {
-        	    	Log.e(TAG, e.toString());
-        	    } catch (IOException e) {
-        	    	Log.e(TAG, e.toString());
-        	    }
-        	}
+        	String[] station = savedInstanceState.getStringArray(PLAYLIST);
+        	Log.i(TAG, "dump data into playlist object");
+        	playlist.dumpDataIn(station);
+        	handler.sendEmptyMessage(PlayListTab.UPDATE);
+        	
+        	currentStation = savedInstanceState.getString(STATION);
+    		currentURL = savedInstanceState.getString(URL);
+    		if ( ! currentStation.equals("")){
+    			TextView stationTV = (TextView) findViewById(com.webeclubbin.mynpr.R.id.playingstation);
+    			stationTV.setText( currentStation + ": ");
+    			TextView contentTV = (TextView) findViewById(com.webeclubbin.mynpr.R.id.playingcontent);
+        	    contentTV.setText( currentURL );
+    		}
+        	
 
-        } */
+        }
 
     }
  
     //Thread process for grabbing data
     public void run() {	
-    		
+    		handler.sendEmptyMessage(PlayListTab.SPIN);
     		playlist = grabdata_playlist();
     		handler.sendEmptyMessage(PlayListTab.UPDATE);
     }
@@ -336,6 +361,9 @@ public class PlayListTab extends Activity implements Runnable, ServiceConnection
     		}
 		}    
     	
+    	Log.i(TAG, "stop player if it is running");
+    	turnOffNotify();
+    	
     	Log.i(TAG,"Start Spinner");
     	handler.sendEmptyMessage(PlayListTab.SPIN);
     	
@@ -379,12 +407,12 @@ public class PlayListTab extends Activity implements Runnable, ServiceConnection
 		String TAG = "updatescreen - Playlist";
 
 		Log.i(TAG, "ENTER");
-		if ( ih == null ){
+		/*if ( ih == null ){
 			ih = new ImageHelper(maincontext);
 			ih.setImageStorage(playlist.getLogos());
 		} else if (updatescreen == true) {
 			ih.setImageStorage(playlist.getLogos());
-		}
+		} */
 
 		if (playlist.getStations() != null){
 			//TODO sort adapter
@@ -428,23 +456,19 @@ public class PlayListTab extends Activity implements Runnable, ServiceConnection
     	}
     	
     	//Save playlist
-    	/*byte[] bufOfPlaylist = null;
-    	try {
-    		// Serialize to a byte array
-            ByteArrayOutputStream bos = new ByteArrayOutputStream() ;
-            ObjectOutputStream out = new ObjectOutputStream(bos) ;
-            out.writeObject(playlist);
-            out.close();
-        
-            // Get the bytes of the serialized object
-            bufOfPlaylist = bos.toByteArray();
-        } catch (IOException e) {
-        	Log.e(TAG, e.toString());
-        }
-        
+    	String playlistdump[] = playlist.dumpDataOut();
+    	
         Log.i(TAG, "Saving playlist in instanceState");
-        instanceState.putByteArray(PLAYLIST, bufOfPlaylist); */
+        instanceState.putStringArray(PLAYLIST, playlistdump); 
 
+        Log.i(TAG, "Saving TextViews");
+        //TextView station = (TextView) findViewById(com.webeclubbin.mynpr.R.id.playingstation); 
+		//TextView content = (TextView) findViewById(com.webeclubbin.mynpr.R.id.playingcontent);
+        instanceState.putString(STATION, currentStation );
+        instanceState.putString(URL, currentURL );
+        
+        //instanceState.putStringArray(IMAGES, ih.getUrls() );
+    	
     	super.onSaveInstanceState(instanceState);
     }
     
@@ -538,8 +562,11 @@ public class PlayListTab extends Activity implements Runnable, ServiceConnection
     public void onDestroy(){
     	super.onDestroy();
     	String TAG = "onDestroy()";
+    	Log.i(TAG,"unregisterReceiver");
+    	unregisterReceiver (playListReceiver);
+    	/*
     	//Clear any notifications we may have.
     	Log.i(TAG, "clear any hanging around notifications");
-    	turnOffNotify();
+    	turnOffNotify();*/
     }
 }
