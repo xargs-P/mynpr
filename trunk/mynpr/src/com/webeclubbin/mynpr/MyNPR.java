@@ -42,22 +42,7 @@ public class MyNPR extends TabActivity {
         maincontext = this;
         
         b = savedInstanceState;
-        if (savedInstanceState == null){
-        	Log.i(TAG, "Bundle savedInstanceState is null.");
-        } else {
-        	Log.i(TAG, "Bundle savedInstanceState is NOT null.");
-        	
-        	final Set<String> ourset = savedInstanceState.keySet();
-        	String[] s = {"temp"};
-        	final String[] ourstrings = ourset.toArray(s);
-        	final int bundlesize =  ourstrings.length;
-        	Log.i(TAG, "Bundle size: " + String.valueOf( bundlesize ) );
-        	
-        	for(int i=0; i< bundlesize ; i++){
-        		Log.i(TAG, "Bundle contents: " + ourstrings[i]);
-           }
-
-        }
+        
         
         // Resize Button Images
         DisplayMetrics dm = new DisplayMetrics();
@@ -82,7 +67,24 @@ public class MyNPR extends TabActivity {
         tempipl.setClass(maincontext , com.webeclubbin.mynpr.PlayListTab.class );
         tabHost.addTab(tabHost.newTabSpec(tPLAY).setIndicator("Playlist").setContent( tempipl ) );
         
-        tabHost.setCurrentTab(0);  
+        if (savedInstanceState == null){
+        	Log.i(TAG, "Bundle savedInstanceState is null.");
+        	tabHost.setCurrentTab(0); 
+        } else {
+        	Log.i(TAG, "Bundle savedInstanceState is NOT null.");
+        	
+        	final Set<String> ourset = savedInstanceState.keySet();
+        	String[] s = {"temp"};
+        	final String[] ourstrings = ourset.toArray(s);
+        	final int bundlesize =  ourstrings.length;
+        	Log.i(TAG, "Bundle size: " + String.valueOf( bundlesize ) );
+        	
+        	for(int i=0; i< bundlesize ; i++){
+        		Log.i(TAG, "Bundle contents: " + ourstrings[i]);
+           }
+
+        }
+         
 
     }
     
@@ -112,5 +114,14 @@ public class MyNPR extends TabActivity {
     	maincontext.sendBroadcast(i );
     }
     
+    //Clean up work
+    @Override
+    public void onDestroy(){
+    	super.onDestroy();
+    	String TAG = "onDestroy()";
+    	//Clear any notifications we may have.
+    	//Log.i(TAG, "clear any hanging around notifications");
+    	//turnOffNotify();
+    }
 
 }
