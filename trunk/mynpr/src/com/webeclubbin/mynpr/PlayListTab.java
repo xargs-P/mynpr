@@ -166,7 +166,7 @@ public class PlayListTab extends Activity implements Runnable, ServiceConnection
      	   public void onClick(View v) {
      		   String TAG = "PlayStatus - onClick";
      		   Log.i(TAG,"Begin");
-     		   
+     		  
      		   if (streamerBinder != null){
      			   boolean p = false;
      			   try {
@@ -178,9 +178,17 @@ public class PlayListTab extends Activity implements Runnable, ServiceConnection
     				   //Stop audio
     				   Log.i(TAG, "Stop audio");
     				   stopplayer();
+    			   } else {
+    				   Log.i(TAG, "Play audio - streamerBinder is not null and not playing");
+
+         			   if ( ! currentURL.equals("") ){
+         				   play(currentStation, currentURL);
+         			   } else {
+         				   Log.i(TAG, "Skip Playing audio. No link to play.");
+         			   }
     			   }
      		   } else {
-     			   Log.i(TAG, "Play audio");
+     			   Log.i(TAG, "Play audio - streamerBinder was null");
 
      			   if ( ! currentURL.equals("") ){
      				   play(currentStation, currentURL);
@@ -188,7 +196,7 @@ public class PlayListTab extends Activity implements Runnable, ServiceConnection
      				   Log.i(TAG, "Skip Playing audio. No link to play.");
      			   }
 
-     		   }
+     		   } 
      		   
      	   }
         }); 
@@ -251,8 +259,13 @@ public class PlayListTab extends Activity implements Runnable, ServiceConnection
         	//ih.setImageStorage(savedInstanceState.getStringArray(IMAGES));
         	
         	String[] station = savedInstanceState.getStringArray(PLAYLIST);
-        	Log.i(TAG, "dump data into playlist object");
-        	playlist.dumpDataIn(station);
+        	if (station != null){
+        		Log.i(TAG, "dump data into playlist object");
+        		playlist.dumpDataIn(station);
+        	} else {
+        		Log.i(TAG, "Create new playlist object");
+        		playlist = new PlayList(this);
+        	}
         	handler.sendEmptyMessage(PlayListTab.UPDATE);
         	
         	currentStation = savedInstanceState.getString(STATION);
@@ -457,17 +470,14 @@ public class PlayListTab extends Activity implements Runnable, ServiceConnection
     	
     	//Save playlist
     	String playlistdump[] = playlist.dumpDataOut();
-    	
-        Log.i(TAG, "Saving playlist in instanceState");
-        instanceState.putStringArray(PLAYLIST, playlistdump); 
+    	if (playlistdump != null){
+    		Log.i(TAG, "Saving playlist in instanceState");
+    		instanceState.putStringArray(PLAYLIST, playlistdump);
+    	}
 
         Log.i(TAG, "Saving TextViews");
-        //TextView station = (TextView) findViewById(com.webeclubbin.mynpr.R.id.playingstation); 
-		//TextView content = (TextView) findViewById(com.webeclubbin.mynpr.R.id.playingcontent);
         instanceState.putString(STATION, currentStation );
         instanceState.putString(URL, currentURL );
-        
-        //instanceState.putStringArray(IMAGES, ih.getUrls() );
     	
     	super.onSaveInstanceState(instanceState);
     }
@@ -544,7 +554,11 @@ public class PlayListTab extends Activity implements Runnable, ServiceConnection
     	
     	MyNPR parent = (MyNPR) maincontext.getParent();
 		Log.i(TAG, "unbind from service");
-		parent.unbindService (this);
+		try {
+			parent.unbindService (this);
+		} catch (IllegalArgumentException e){
+			Log.e(TAG, "Does not look like we are bound: " + e.toString());
+		}
 		streamerBinder = null;
 		
     	Log.i(TAG, "Grab NotificationManager");

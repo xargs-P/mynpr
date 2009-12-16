@@ -85,6 +85,12 @@ public class PlayList  {
 		Set<String> s = plist.keySet();
 		String[] t = {""} ;
 		Log.i(TAG, "Number of Stations: " + s.toArray(t).length);
+		if (s.toArray(t).length == 1){
+			String[] temp = s.toArray(t);
+			if (temp[0] == null){
+				return null;
+			}
+		}
 		return s.toArray(t);
 	}
 	
@@ -213,6 +219,9 @@ public class PlayList  {
 		
     	Vector<String> lineofdata = new Vector<String>();
     	String [] s = getStations();
+    	if (s == null){
+    		return null;
+    	}
         //Grab data out
         for (int i = 0; i <  s.length; i++)   {
         	Log.i(TAG, s[i]);
