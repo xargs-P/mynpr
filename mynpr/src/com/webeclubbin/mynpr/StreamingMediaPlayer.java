@@ -45,7 +45,8 @@ public class StreamingMediaPlayer extends Service {
 	private int playedcounter = 0;
 	//TODO should convert to Stack object instead of Vector
 	private Vector<MediaPlayer> mediaplayers = new Vector<MediaPlayer>(3);
-	private boolean started = false; 
+	private boolean started = false;
+	private boolean processHasStarted = false; 
 	private InputStream stream = null;
 	private URL url = null;
     private URLConnection urlConn = null;
@@ -83,6 +84,8 @@ public class StreamingMediaPlayer extends Service {
     		
     		Log.i(TAG, "Intent: " + startingIntent.getStringExtra(PlayListTab.URL));
         	Log.i(TAG, "Station: " + startingIntent.getStringExtra(PlayListTab.STATION));
+        	
+        	processHasStarted = true;
         	
         	audiourl =  startingIntent.getStringExtra(PlayListTab.URL);
         	station =  startingIntent.getStringExtra(PlayListTab.STATION);
@@ -144,6 +147,8 @@ public class StreamingMediaPlayer extends Service {
     	Log.i(TAG, "Intent: " + intent.getStringExtra(PlayListTab.URL));
     	Log.i(TAG, "Station: " + intent.getStringExtra(PlayListTab.STATION));
     	
+    	processHasStarted = true;
+    	
     	audiourl =  intent.getStringExtra(PlayListTab.URL);
     	station =  intent.getStringExtra(PlayListTab.STATION);
     	
@@ -198,7 +203,7 @@ public class StreamingMediaPlayer extends Service {
     	try {
     		url = new URL(mediaUrl);
     		urlConn = (HttpURLConnection)url.openConnection();
-    		urlConn.setReadTimeout(1000 * 10);
+    		urlConn.setReadTimeout(1000 * 20);
     		urlConn.setConnectTimeout(1000 * 5);
 
     		String ctype = urlConn.getContentType () ;
@@ -481,7 +486,8 @@ public class StreamingMediaPlayer extends Service {
     //Is the streamer playing audio?
     public boolean isPlaying() {
     	String TAG = "isPlaying";
-    	boolean result = false;
+    	Log.i(TAG, " = "  + processHasStarted);
+    	/*boolean result = false;
     	try {
     		MediaPlayer mp = mediaplayers.get(0);
     		if (mp.isPlaying()){
@@ -493,7 +499,8 @@ public class StreamingMediaPlayer extends Service {
     		Log.e(TAG, "No items in Media player List");
     	}
     	
-    	return result;
+    	return result; */
+    	return processHasStarted ;
     }
     
     //Send Message to Playlist
