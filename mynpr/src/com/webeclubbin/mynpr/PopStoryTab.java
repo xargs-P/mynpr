@@ -305,6 +305,7 @@ public class PopStoryTab extends Activity implements Runnable {
 		
 
 		
+		
 		/*if ( ih == null ){
 			ih = new ImageHelper(maincontext);
 			ih.setImageStorage(image);

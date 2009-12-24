@@ -1,15 +1,18 @@
 package com.webeclubbin.mynpr;
 
 import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStreamWriter;
 import java.net.URL;
 import java.net.URLConnection;
 import java.util.HashMap;
 import java.util.Set;
+import java.util.regex.Pattern;
 
 import android.app.Activity;
 import android.content.Context;
@@ -66,19 +69,27 @@ public class ImageHelper {
     		return;
     	}
     	bm = imagestorage.get(url);
+    	File f = context.getCacheDir();
+    	String [] s = Pattern.compile("?", Pattern.LITERAL).split(url);
+    	String [] s1 = {""}; 
+    	// suffix = "";
+    	s1 = Pattern.compile(".", Pattern.LITERAL).split(s[0]);
+    	String suffix = s1[s1.length - 1];
+    	
+    	String imagefile = f.getPath() + File.separator + PREFIX + String.valueOf( url.hashCode() ) + "." + suffix;
+    	
     	if (bm == null) {
     		Log.i(TAG, "See if we can grab image from disk cache. Not in memory: " + url);
     		
     		//See if we have the file saved in a cache file
-    		File f = context.getCacheDir();
-    		String imagefile = f.getPath() + File.separator + PREFIX + String.valueOf( url.hashCode() ) + ".png";
+
     		File image = new File (imagefile);
     		if ( image.exists() ){
     			Log.i(TAG, "Found image in cache dir " + imagefile );
     			bm = BitmapFactory.decodeFile(imagefile);
     			
     			if (bm == null) {
-    				Log.i(TAG, "File is blank! We need to redownload");
+    				Log.i(TAG, "We could not read file. We need to redownload");
     				Log.i(TAG, "Delete local file");
     				image.delete();
     			} else {
@@ -100,11 +111,25 @@ public class ImageHelper {
     				//conn.connect();
     				Log.i(TAG, "grabbing " + url );
     				InputStream is = conn.getInputStream(); 
-    				BufferedInputStream bis = new BufferedInputStream(is, 8192);
+    				//BufferedInputStream bis = new BufferedInputStream(is, 8192);
     				//BufferedInputStream bis = new BufferedInputStream(is);
-    				bm = BitmapFactory.decodeStream(bis); 
-    				bis.close(); 
+
+    				FileOutputStream fos = new FileOutputStream(imagefile);
+    				//BufferedOutputStream bout = new BufferedOutputStream ( fos ) ;
+    				
+    				
+    				int b;
+    				while((b=is.read())!=-1) 
+    				{ 
+    					fos.write(b); 
+    				} 
+    				Log.i(TAG," writing done"); 
     				is.close(); 
+    				fos.close(); 
+    				Log.i(TAG," Create bitmap"); 
+    				bm = BitmapFactory.decodeFile (imagefile); 
+    				//bis.close(); 
+    				//is.close(); 
     				
     				if (bm != null) {
     					Log.i(TAG, "Storing image in memory" );
@@ -117,7 +142,7 @@ public class ImageHelper {
     				Log.e(TAG, "Error getting bitmap: " + url, e); 
     			} 
     		
-    			if (bm != null) {
+    			/*if (bm != null) {
     				//Save to file
     				try {
     					FileOutputStream outToFile = new FileOutputStream( imagefile );
@@ -133,7 +158,7 @@ public class ImageHelper {
     				}
     			} else {
     				Log.i( TAG, "Skip saving file since we did not download it" );
-    			}
+    			}*/
     		}
     	} else {
     		Log.i(TAG, "found image in storage memory");
