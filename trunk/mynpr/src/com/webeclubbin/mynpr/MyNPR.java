@@ -6,13 +6,11 @@ import java.util.Set;
 
 import android.app.Activity;
 import android.app.TabActivity;
-import android.content.ComponentName;
 import android.content.Intent;
-import android.content.ServiceConnection;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
 import android.os.Bundle;
-import android.os.IBinder;
+import android.os.Process;
 import android.util.DisplayMetrics;
 import android.util.Log;
 import android.widget.TabHost;
@@ -114,13 +112,37 @@ public class MyNPR extends TabActivity {
     	maincontext.sendBroadcast(i );
     }
     
+    //Check Priority level
+    public void checkThreadPriority(){
+    	String TAG = "checkThreadPriority";
+    	Log.i(TAG, "Start" );
+    	Log.v(TAG, "MyNPR Process priority: " + Process.getThreadPriority(Process.myTid()));
+    }
+    
+    //Raise Priority level
+    public void raiseThreadPriority(){
+    	//This save my butt http://www.anddev.org/viewtopic.php?p=1085
+    	String TAG = "checkThreadPriority";
+    	Log.i(TAG, "Start" );
+    	Log.i(TAG, "Set Thread priority");
+    	Process.setThreadPriority(Process.THREAD_PRIORITY_AUDIO);
+    }
+    
+    //Lower Priority level
+    public void lowerThreadPriority(){
+    	String TAG = "lowerThreadPriority";
+    	Log.i(TAG, "Start" );
+    	Log.i(TAG, "Set Thread priority");
+    	Process.setThreadPriority(Process.THREAD_PRIORITY_DEFAULT);
+    }
+    
     //Clean up work
     @Override
     public void onDestroy(){
     	super.onDestroy();
     	String TAG = "onDestroy()";
     	//Clear any notifications we may have.
-    	//Log.i(TAG, "clear any hanging around notifications");
+    	Log.i(TAG, "clear any hanging around notifications");
     	//turnOffNotify();
     }
 

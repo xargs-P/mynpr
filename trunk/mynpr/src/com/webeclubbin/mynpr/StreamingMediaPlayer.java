@@ -23,6 +23,8 @@ import android.media.MediaPlayer;
 import android.os.IBinder;
 import android.util.Log;
 
+import android.os.Process;
+
 /**
  * MediaPlayer does not yet support "Shoutcast"-like streaming from external URLs so this class provides a pseudo-streaming function
  * by downloading the content incrementally & playing as soon as we get enough audio in our temporary storage.
@@ -82,7 +84,15 @@ public class StreamingMediaPlayer extends Service {
     	public void startAudio(){
     		Log.i(TAG, "startAudio" );
     		
-    		Log.i(TAG, "Intent: " + startingIntent.getStringExtra(PlayListTab.URL));
+    		Runnable r = new Runnable() {   
+    			public void run() {   
+    				onStart (startingIntent, 0);
+    			}   
+    		};   
+    		new Thread(r).start(); 
+    		//onStart (startingIntent, 0);
+    		 
+    		/*Log.i(TAG, "Intent: " + startingIntent.getStringExtra(PlayListTab.URL));
         	Log.i(TAG, "Station: " + startingIntent.getStringExtra(PlayListTab.STATION));
         	
         	processHasStarted = true;
@@ -103,7 +113,7 @@ public class StreamingMediaPlayer extends Service {
         		startStreaming( audiourl );
         	} catch (IOException e) {
         		Log.i(TAG, e.toString() );
-        	}
+        	}*/
     		
     	}
     	
@@ -143,7 +153,7 @@ public class StreamingMediaPlayer extends Service {
     	
     	String TAG = "StreamingMediaPlayer - onStart";
     	Log.i(TAG, "START");
-    	
+
     	Log.i(TAG, "Intent: " + intent.getStringExtra(PlayListTab.URL));
     	Log.i(TAG, "Station: " + intent.getStringExtra(PlayListTab.STATION));
     	
@@ -157,8 +167,9 @@ public class StreamingMediaPlayer extends Service {
     		context = this;
      		downloadingMediaFile = new File(context.getCacheDir(),DOWNFILE + counter);
      		downloadingMediaFile.deleteOnExit();
-     		
+
     		startStreaming( audiourl );
+     	    		
     	} catch (IOException e) {
     		Log.i(TAG, e.toString() );
     	}
@@ -197,6 +208,10 @@ public class StreamingMediaPlayer extends Service {
     	
     	final String TAG = "startStreaming";
         int bitrate = 56;
+        
+        sendMessage( PlayListTab.CHECKRIORITY );
+        
+		sendMessage( PlayListTab.RAISEPRIORITY );
         
         sendMessage( PlayListTab.START );
         
@@ -240,6 +255,15 @@ public class StreamingMediaPlayer extends Service {
     	//Assume XX kbps * XX seconds / 8 bits per byte
     	INTIAL_KB_BUFFER =  bitrate * SECONDS / BIT;
     	
+    	/*try {   
+    		downloadAudioIncrement(mediaUrl);
+        } catch (IOException e) {
+        	Log.e(TAG, "Unable to initialize the MediaPlayer for Audio Url = " + mediaUrl, e);
+        	sendMessage( PlayListTab.TROUBLEWITHAUDIO);
+        	stop();
+        	return;
+        }  */
+    	 
 		Runnable r = new Runnable() {   
 	        public void run() {   
 	            try {   
@@ -252,7 +276,7 @@ public class StreamingMediaPlayer extends Service {
 	            }   
 	        }   
 	    };   
-	    new Thread(r).start();
+	    new Thread(r).start(); 
     }
     
     /**  
@@ -315,6 +339,7 @@ public class StreamingMediaPlayer extends Service {
             }
             
             if ( totalKbRead >= INTIAL_KB_BUFFER ) {
+            	sendMessage( PlayListTab.CHECKRIORITY );
             	Log.v(TAG, "Reached Buffer amount we want: " + "totalKbRead: " + totalKbRead + " INTIAL_KB_BUFFER: " + INTIAL_KB_BUFFER);
             	bout.flush();
             	bout.close();
@@ -347,7 +372,7 @@ public class StreamingMediaPlayer extends Service {
 	        		MediaPlayer.OnCompletionListener listener = new MediaPlayer.OnCompletionListener () {
 	        			public void onCompletion(MediaPlayer mp){
 	        				String TAG = "MediaPlayer.OnCompletionListener";
-
+	        				Log.i(TAG, "Start");
 	        				Log.i(TAG, "Current size of mediaplayer list: " + mediaplayers.size() );
 	        				boolean waitingForPlayer = false;
 	        				boolean leave = false;
@@ -394,6 +419,7 @@ public class StreamingMediaPlayer extends Service {
 	            	mp.setDataSource(ins.getFD());
 	        		mp.setAudioStreamType(AudioManager.STREAM_MUSIC);
 	        		
+	        		Log.i(TAG, "Setup player completion listener");
 	        		mp.setOnCompletionListener(listener);
 	        		Log.i(TAG, "Prepare Media Player " + f);
 	        		
@@ -421,7 +447,19 @@ public class StreamingMediaPlayer extends Service {
 	        	
  	        }
 	    };
-	    new Thread(r).start();
+	    Thread ourthread = new Thread(r);
+	    ourthread.start();
+	    
+	    // Wait indefinitely for the thread to finish
+	    if ( ! started  ){
+	    	try {
+	    		Log.i(TAG, "Start and wait for first audio clip to be prepared.");
+	    		ourthread.join();
+	    		// Finished
+	    	} catch (InterruptedException e) {
+	    		// Thread was interrupted
+	    	}
+	    }  
 
     }
    
@@ -504,7 +542,7 @@ public class StreamingMediaPlayer extends Service {
     }
     
     //Send Message to Playlist
-    private void sendMessage(int m){
+    private synchronized void sendMessage(int m){
     	String TAG = "sendMessage";
     	Intent i = new Intent(MyNPR.tPLAY);
 
@@ -512,6 +550,14 @@ public class StreamingMediaPlayer extends Service {
     	Log.i(TAG, "Broadcast Message intent");
     	context.sendBroadcast (i) ;
     }
+    
+    /*private void checkThreadPriority(){
+    	String TAG = "checkThreadPriority";
+    	Log.i(TAG, "Start" );
+    	//Process.setThreadPriority(Process.THREAD_PRIORITY_AUDIO); 
+    	Log.v(TAG, "Process priority: " + Process.getThreadPriority(Process.myTid()));
+    	//Process.THREAD_PRIORITY_FOREGROUND
+    } */
     
 }
 

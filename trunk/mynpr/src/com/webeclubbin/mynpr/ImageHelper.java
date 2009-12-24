@@ -59,6 +59,7 @@ public class ImageHelper {
     } 
     
     private void processImage (String url) {
+    	//TODO Save image as it's own format. Don't change it.
     	Bitmap bm = null; 
     	String TAG = "processImage";
     	if (url == null){
