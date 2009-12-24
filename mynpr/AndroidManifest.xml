@@ -9,15 +9,16 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-    <activity android:name="SearchStationTab"></activity>
-    <activity android:name="PopStoryTab"></activity>
-    <activity android:name="PlayListTab"></activity>
+    	<activity android:name="SearchStationTab"></activity>
+    	<activity android:name="PopStoryTab"></activity>
+    	<activity android:name="PlayListTab"></activity>
 
-	<activity android:name="HTMLviewer"></activity>
-	<service android:name="StreamingMediaPlayer"/>
+		<activity android:name="HTMLviewer"></activity>
+		<service android:name="StreamingMediaPlayer"/>
 </application>
 
 
 <uses-permission android:name="android.permission.INTERNET"></uses-permission>
-<uses-sdk android:minSdkVersion="1"></uses-sdk>
+<uses-permission android:name="android.permission.RAISED_THREAD_PRIORITY"></uses-permission>
+<uses-sdk android:minSdkVersion="3"></uses-sdk>
 </manifest> 

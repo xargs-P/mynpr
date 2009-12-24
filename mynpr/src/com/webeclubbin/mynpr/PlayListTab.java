@@ -68,6 +68,9 @@ public class PlayListTab extends Activity implements Runnable, ServiceConnection
 	public static final int SPIN = 3;
 	public static final int STOPSPIN = 4;
 	public static final int TROUBLEWITHAUDIO = 5;
+	public static final int RAISEPRIORITY = 6;
+	public static final int CHECKRIORITY = 7;
+	public static final int LOWERPRIORITY = 8;
 	
 	private IStreamingMediaPlayer.Stub streamerBinder = null;
 	
@@ -115,7 +118,16 @@ public class PlayListTab extends Activity implements Runnable, ServiceConnection
     		Log.i(TAG, "Do not start player? " + doNotStart );
     		if ( streamerBinder.playing() == false  && doNotStart == false ){
     			//Start it up
-    			 streamerBinder.startAudio();
+    			Log.i(TAG, "Start audio");
+    			MyNPR parent = (MyNPR) maincontext.getParent();
+    			Intent i = new Intent(maincontext, StreamingMediaPlayer.class);
+
+    			i.putExtra(PlayListTab.URL, currentURL );
+    			i.putExtra(PlayListTab.STATION, currentStation );
+    			Log.i(TAG, "startService(i)");
+    			parent.startService(i) ; 
+    			//streamerBinder.startAudio();
+    			Log.i(TAG, "Done starting audio");
     			 
     		} else if (streamerBinder.playing()) {
     			Log.i(TAG, "setup playing content on screen");
@@ -232,9 +244,6 @@ public class PlayListTab extends Activity implements Runnable, ServiceConnection
 		}*/
 		
 	   
-		
-        
-		   
 		//thread = new Thread(this);
 		//thread.start();
         if (savedInstanceState == null){
@@ -328,6 +337,18 @@ public class PlayListTab extends Activity implements Runnable, ServiceConnection
         		Toast.makeText(maincontext, "Could not connect with Audio Stream" , Toast.LENGTH_LONG).show();
         		//turnOffNotify();
         		stopplayer() ;
+        	} else if (msg.what == PlayListTab.RAISEPRIORITY){
+        		Log.i(TAG, "Raise priority level for main process");
+        		MyNPR parent = (MyNPR) maincontext.getParent();
+        		parent.raiseThreadPriority();
+        	} else if (msg.what == PlayListTab.CHECKRIORITY){
+        		Log.i(TAG, "Check priority level for main process");
+        		MyNPR parent = (MyNPR) maincontext.getParent();
+        		parent.checkThreadPriority();
+        	} else if (msg.what == PlayListTab.LOWERPRIORITY){
+        		Log.i(TAG, "Lower priority level for main process");
+        		MyNPR parent = (MyNPR) maincontext.getParent();
+        		parent.lowerThreadPriority();
         	}
         }
     };
@@ -353,7 +374,7 @@ public class PlayListTab extends Activity implements Runnable, ServiceConnection
     }
     
     //Play audio link
-    public void play(String ourstation, final String audiolink){
+    public void play(final String ourstation, final String audiolink){
     	final String TAG = "PLAY audio";
 
     	Log.i(TAG, "START");
@@ -393,6 +414,8 @@ public class PlayListTab extends Activity implements Runnable, ServiceConnection
 		Log.i(TAG,"Bind to our Streamer service");
 		MyNPR parent = (MyNPR) maincontext.getParent();
 		parent.bindService (i, this , Context.BIND_AUTO_CREATE);
+		Log.i(TAG,"Bind Done");
+		//maybe  startService (Intent service) also
 	    
     }
     
@@ -560,6 +583,8 @@ public class PlayListTab extends Activity implements Runnable, ServiceConnection
 			Log.e(TAG, "Does not look like we are bound: " + e.toString());
 		}
 		streamerBinder = null;
+		
+		handler.sendEmptyMessage( PlayListTab.LOWERPRIORITY );
 		
     	Log.i(TAG, "Grab NotificationManager");
     	//Get a reference to the NotificationManager
