@@ -34,6 +34,13 @@ public class PopStoriesAdapter extends ArrayAdapter<String> {
         } else {
         	im = new ImageHelper(context);
         }
+        
+        Runnable r = new Runnable() {   
+	        public void run() {   
+	        	im.setImageStorage(image);
+	        }   
+	    };   
+	    new Thread(r).start(); 
     }  
 
 	@Override
