@@ -83,6 +83,7 @@ public class StreamingMediaPlayer extends Service {
     	//Start playing audio
     	public void startAudio(){
     		Log.i(TAG, "startAudio" );
+    		raiseThreadPriority();
     		
     		Runnable r = new Runnable() {   
     			public void run() {   
@@ -558,6 +559,14 @@ public class StreamingMediaPlayer extends Service {
     	Log.v(TAG, "Process priority: " + Process.getThreadPriority(Process.myTid()));
     	//Process.THREAD_PRIORITY_FOREGROUND
     } */
+    
+    private void raiseThreadPriority(){
+    	String TAG = "raiseThreadPriority";
+    	Log.i(TAG, "Start" );
+    	Process.setThreadPriority(Process.THREAD_PRIORITY_AUDIO); 
+    	//Log.v(TAG, "Process priority: " + Process.getThreadPriority(Process.myTid()));
+    	//Process.THREAD_PRIORITY_FOREGROUND
+    } 
     
 }
 

@@ -130,7 +130,9 @@ public class SearchStationTab extends Activity implements Runnable {
       				   Log.i(TAG,"Found city , state");
       				   loc = Pattern.compile(",").split(searchtext);
       				   city = loc[0].trim();
+      				   city = city.toLowerCase();
       				   state = loc[1].trim();
+      				   state = state.toUpperCase();
       				   try {
       					   city = URLEncoder.encode(city,"UTF-8");
       					   state = URLEncoder.encode(state,"UTF-8");

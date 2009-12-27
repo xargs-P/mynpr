@@ -293,29 +293,28 @@ public class PopStoryTab extends Activity implements Runnable {
 		
 		Log.i(TAG, "ENTER");
 		
-		title = lvpopstories[0];
-		image = lvpopstories[1];
+		if ( lvpopstories != null ) {
+			title = lvpopstories[0];
+			image = lvpopstories[1];
+			if ( title != null ){
 		
-		if (title == null){
-			Log.i(TAG, "Null Title");
-		}
-		if (image == null){
-			Log.i(TAG, "Null image");
-		}
-		
+				
+				if (image == null){
+					Log.i(TAG, "Null image");
+				}
 
-		
-		
-		/*if ( ih == null ){
-			ih = new ImageHelper(maincontext);
-			ih.setImageStorage(image);
-		} else if (updatepopstories == true) {
-			ih.setImageStorage(image);
-		}*/
-
-		lv.setAdapter( new PopStoriesAdapter(maincontext,
-				com.webeclubbin.mynpr.R.layout.popstoryrow, 
-				title, image, ih) );
+				lv.setAdapter( new PopStoriesAdapter(maincontext,
+						com.webeclubbin.mynpr.R.layout.popstoryrow, 
+						title, image, ih) );
+			} else {
+				if (title == null){
+					Log.i(TAG, "Null Titles");
+				}
+			}
+		} else {
+			Log.i(TAG," Null result set");
+			lv.setAdapter( null);
+		}
 		
 		//Set date on view
 		TextView poprefresh = (TextView) findViewById(com.webeclubbin.mynpr.R.id.poprefresh);
