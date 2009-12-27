@@ -125,7 +125,7 @@ public class PlayListTab extends Activity implements Runnable, ServiceConnection
     			i.putExtra(PlayListTab.URL, currentURL );
     			i.putExtra(PlayListTab.STATION, currentStation );
     			Log.i(TAG, "startService(i)");
-    			parent.startService(i) ; 
+    			parent.startService(i) ;
     			//streamerBinder.startAudio();
     			Log.i(TAG, "Done starting audio");
     			 
@@ -167,6 +167,13 @@ public class PlayListTab extends Activity implements Runnable, ServiceConnection
         Log.i(TAG, "Setup IntentFilter");
         ourintentfilter = new IntentFilter(MyNPR.tPLAY);
 		
+        Log.i(TAG,"Unregister any Receivers");
+        try {
+        	unregisterReceiver (playListReceiver);
+		} catch (IllegalArgumentException e){
+			Log.e(TAG, "Does not look like we have a registered receiver: " + e.toString());
+		}
+    	
         //Start listening for Intents
 		Log.i(TAG, "Register IntentFilter");
         registerReceiver (playListReceiver, ourintentfilter);
@@ -381,6 +388,9 @@ public class PlayListTab extends Activity implements Runnable, ServiceConnection
     	
     	currentStation = ourstation;
     	currentURL = audiolink;
+    	
+    	Log.i(TAG, currentStation);
+    	Log.i(TAG, currentURL);
     	//Stop service
     	Log.i(TAG, "Check to see if we need to stop the player");
     	if (streamerBinder != null ){
@@ -457,7 +467,8 @@ public class PlayListTab extends Activity implements Runnable, ServiceConnection
 					playlist, ih) );
 		} else {
 			Log.i(TAG, "No stations to display");
-		}
+			lv.setAdapter( null );
+		} 
 		
 
     	//Tell UI to update our list
@@ -602,7 +613,12 @@ public class PlayListTab extends Activity implements Runnable, ServiceConnection
     	super.onDestroy();
     	String TAG = "onDestroy()";
     	Log.i(TAG,"unregisterReceiver");
-    	unregisterReceiver (playListReceiver);
+    	try {
+    		unregisterReceiver (playListReceiver);
+		} catch (IllegalArgumentException e){
+			Log.e(TAG, "Does not look like we have a registered receiver: " + e.toString());
+		}
+    	
     	/*
     	//Clear any notifications we may have.
     	Log.i(TAG, "clear any hanging around notifications");
