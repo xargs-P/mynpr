@@ -71,6 +71,7 @@ public class PlayListTab extends Activity implements Runnable, ServiceConnection
 	public static final int RAISEPRIORITY = 6;
 	public static final int CHECKRIORITY = 7;
 	public static final int LOWERPRIORITY = 8;
+	public static final int RESETPLAYSTATUS = 9;
 	
 	private IStreamingMediaPlayer.Stub streamerBinder = null;
 	
@@ -356,6 +357,9 @@ public class PlayListTab extends Activity implements Runnable, ServiceConnection
         		Log.i(TAG, "Lower priority level for main process");
         		MyNPR parent = (MyNPR) maincontext.getParent();
         		parent.lowerThreadPriority();
+        	} else if (msg.what == PlayListTab.RESETPLAYSTATUS){
+        		Log.i(TAG, "Reset play status to not playing.");
+        		
         	}
         }
     };
@@ -401,11 +405,12 @@ public class PlayListTab extends Activity implements Runnable, ServiceConnection
     			Log.e(TAG, e.toString());
     		}
     		if (p == true){
+    			Log.i(TAG, "Stop player");
     			stopplayer() ;
     		}
 		}    
     	
-    	Log.i(TAG, "stop player if it is running");
+    	Log.i(TAG, "Turn off Notify");
     	turnOffNotify();
     	
     	Log.i(TAG,"Start Spinner");
