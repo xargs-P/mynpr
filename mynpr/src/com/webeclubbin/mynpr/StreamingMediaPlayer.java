@@ -21,9 +21,11 @@ import android.content.Intent;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
 import android.os.IBinder;
-import android.util.Log;
-
 import android.os.Process;
+import android.os.RemoteException;
+import android.telephony.PhoneStateListener;
+import android.telephony.TelephonyManager;
+import android.util.Log;
 
 /**
  * MediaPlayer does not yet support "Shoutcast"-like streaming from external URLs so this class provides a pseudo-streaming function
@@ -144,7 +146,30 @@ public class StreamingMediaPlayer extends Service {
     	  String TAG = "StreamingMediaPlayer - onCreate";
     	  Log.i(TAG, "START");
 
-    	  // init the service here
+    	  // listen for calls
+    	  // http://www.androidsoftwaredeveloper.com/2009/04/20/how-to-detect-call-state/
+    	  
+    	  final PhoneStateListener myPhoneListener = new PhoneStateListener() {
+    		  public void onCallStateChanged(int state, String incomingNumber) {
+    			  String TAG = "PhoneStateListener";
+    			  
+    			  switch (state) {
+    			  	case TelephonyManager.CALL_STATE_RINGING:
+    			  		Log.i(TAG, "Someone's calling. Let us stop the service");
+    			  		sendMessage(PlayListTab.STOP);
+    				  	break;
+    			  	case TelephonyManager.CALL_STATE_OFFHOOK:
+    				  	break;
+    				case TelephonyManager.CALL_STATE_IDLE:
+    				  	break;
+    				default:
+    				  	Log.d(TAG, "Unknown phone state = " + state);
+    			  }
+    		  }
+    	  };
+    	  Log.i(TAG, "Setup Phone listener");
+    	  TelephonyManager tm = (TelephonyManager)getSystemService(TELEPHONY_SERVICE);
+    	  tm.listen(myPhoneListener, PhoneStateListener.LISTEN_CALL_STATE);
 
     }
     
@@ -509,7 +534,10 @@ public class StreamingMediaPlayer extends Service {
     		}
     		stream = null;
     		
-    		//sendMessage(PlayListTab.STOP);
+    		//if (tellPlayList) {
+    		//	sendMessage(PlayListTab.STOP);
+    		//}
+    		//sendMessage(PlayListTab.RESETPLAYSTATUS);
     		stopSelf();
     		
 
