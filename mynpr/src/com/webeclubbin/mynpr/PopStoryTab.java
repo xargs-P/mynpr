@@ -108,7 +108,7 @@ public class PopStoryTab extends Activity implements Runnable {
  
                 i = new Intent("android.intent.action.VIEW", uri, maincontext, com.webeclubbin.mynpr.HTMLviewer.class  );
                 //launch intent
-                Log.i(TAG, "Position:" + position + " url " + oururl);
+                Log.d(TAG, "Position:" + position + " url " + oururl);
                 startActivity(i);
             	
             }
@@ -131,15 +131,15 @@ public class PopStoryTab extends Activity implements Runnable {
         
         //Setup any saved views
         if (savedInstanceState == null){
-        	Log.i(TAG, "Bundle savedInstanceState is null.");
+        	Log.d(TAG, "Bundle savedInstanceState is null.");
         	
     		//Check to see if we need to even download the web content    		
         	timeToUpdate();	
         	
     		MyNPR parent = (MyNPR) getParent(); 
-    		Log.i(TAG, "Parent| bundle null? " + parent.isbundlenull() );
+    		Log.d(TAG, "Parent| bundle null? " + parent.isbundlenull() );
         	if ( parent.isbundlenull()  ) {
-        		Log.i(TAG, "Set up Dialog box ");
+        		Log.d(TAG, "Set up Dialog box ");
         		dialog = new ProgressDialog(this);
         		dialog.setIndeterminate(true);
         		dialog.setCancelable(true); 
@@ -150,23 +150,23 @@ public class PopStoryTab extends Activity implements Runnable {
         		}
         		dialog.show();
         	} else { 
-        		Log.i(TAG, "Skip setting up Dialog box");
+        		Log.d(TAG, "Skip setting up Dialog box");
         	} 
     		
     		thread = new Thread(this);
     		thread.start();
         } else {
         	
-        	Log.i(TAG, "Bundle savedInstanceState is NOT null.");
+        	Log.d(TAG, "Bundle savedInstanceState is NOT null.");
         	
         	final Set<String> ourset = savedInstanceState.keySet();
         	String[] s = {"temp"};
         	final String[] ourstrings = ourset.toArray(s);
         	final int bundlesize =  ourstrings.length;
-        	Log.i(TAG, "Bundle size: " + String.valueOf( bundlesize ) );
+        	Log.d(TAG, "Bundle size: " + String.valueOf( bundlesize ) );
         	
         	for(int i=0; i< bundlesize ; i++){
-        		Log.i(TAG, "Bundle contents: " + ourstrings[i]);
+        		Log.d(TAG, "Bundle contents: " + ourstrings[i]);
         	}
         	byte[] b = savedInstanceState.getByteArray(POPSTORYLISTVIEW);
         	popstorydate = savedInstanceState.getString(POPDATE);
@@ -176,13 +176,13 @@ public class PopStoryTab extends Activity implements Runnable {
         	if ( b != null ) {
         		try {     	    
         	        // Deserialize from a byte array
-        			Log.i(TAG, "Deserialize objects from saved Bundle");
+        			Log.d(TAG, "Deserialize objects from saved Bundle");
         	        ObjectInputStream in = new ObjectInputStream(new ByteArrayInputStream(b));
         	        lvpopstories = (String[][]) in.readObject();
         	        in.close();
         	        
         	        //Update the view
-        	        Log.i(TAG, "Update list view for Stories");
+        	        Log.d(TAG, "Update list view for Stories");
         	        updatepopscreen();
         	    } catch (ClassNotFoundException e) {
         	    	Log.e(TAG, e.toString());
@@ -216,7 +216,7 @@ public class PopStoryTab extends Activity implements Runnable {
     		fis.close();
     		isr.close();
     		input.close();
-    		Log.i( TAG, "Got time since last update");
+    		Log.d( TAG, "Got time since last update");
     		
     		if ( elaspedtime < TIMETOWAIT) {
     			//under TIMETOWAIT
@@ -225,11 +225,11 @@ public class PopStoryTab extends Activity implements Runnable {
             	SimpleDateFormat sdf = new SimpleDateFormat(DATE_FORMAT_NOW);
             	popstorydate = sdf.format( new Date(oldtime) );
             	
-    			Log.i( TAG, "Under " + (TIMETOWAIT/60) + "mins since last update. So no need to redownload: "  + elaspedtime);
+    			Log.d( TAG, "Under " + (TIMETOWAIT/60) + "mins since last update. So no need to redownload: "  + elaspedtime);
         		return false;
         	
     		} else {
-    			Log.i( TAG, "Over " + (TIMETOWAIT/60) + "mins since last update: " + elaspedtime);
+    			Log.d( TAG, "Over " + (TIMETOWAIT/60) + "mins since last update: " + elaspedtime);
     			return true;
     		}
 
@@ -250,12 +250,12 @@ public class PopStoryTab extends Activity implements Runnable {
     		} else {
     			if (madeAttempt == false){
     				madeAttempt = true;
-    				Log.i(TAG, "Try to redownload again.");
+    				Log.d(TAG, "Try to redownload again.");
     				updatepopstories = true;
     				thread = new Thread(this);
     				thread.start();
     			} else {
-    				Log.i(TAG, "We have already tried once. Give up.");
+    				Log.d(TAG, "We have already tried once. Give up.");
     				madeAttempt = false;
     				Toast.makeText(this, "Trouble connecting to npr.org. Try to refresh later.", Toast.LENGTH_LONG).show();
     			}
@@ -291,7 +291,7 @@ public class PopStoryTab extends Activity implements Runnable {
 		String [] image = null;
 		String TAG = "updatepopscreen";
 		
-		Log.i(TAG, "ENTER");
+		Log.d(TAG, "ENTER");
 		
 		if ( lvpopstories != null ) {
 			title = lvpopstories[0];
@@ -300,7 +300,7 @@ public class PopStoryTab extends Activity implements Runnable {
 		
 				
 				if (image == null){
-					Log.i(TAG, "Null image");
+					Log.d(TAG, "Null image");
 				}
 
 				lv.setAdapter( new PopStoriesAdapter(maincontext,
@@ -308,11 +308,11 @@ public class PopStoryTab extends Activity implements Runnable {
 						title, image, ih) );
 			} else {
 				if (title == null){
-					Log.i(TAG, "Null Titles");
+					Log.d(TAG, "Null Titles");
 				}
 			}
 		} else {
-			Log.i(TAG," Null result set");
+			Log.d(TAG," Null result set");
 			lv.setAdapter( null);
 		}
 		
@@ -324,7 +324,7 @@ public class PopStoryTab extends Activity implements Runnable {
 		poprefresh.setText("Refreshed " + popstorydate );
 		
     	//Tell UI to update our list
-		Log.i(TAG, "update screen");
+		Log.d(TAG, "update screen");
     	lv.invalidate();
     }    
    
@@ -345,12 +345,12 @@ public class PopStoryTab extends Activity implements Runnable {
     	//Check to see if we need to download anything
     	if ( updatepopstories == true ) {
     	
-    		Log.i( TAG, "Connect to " + strURL );
+    		Log.d( TAG, "Connect to " + strURL );
     		try {
     			url = new URL(strURL);
     			urlConn = url.openConnection();
     			urlConn.setConnectTimeout(10000);
-    			Log.i( TAG, "Opened connection");
+    			Log.d( TAG, "Opened connection");
     		} catch (IOException ioe) {
     			Log.e( TAG, "Could not connect to " + strURL );
     		}
@@ -365,7 +365,7 @@ public class PopStoryTab extends Activity implements Runnable {
     			}
     			is.close();
     			fos.close();
-    			Log.i( TAG, "Saved xml to file");
+    			Log.d( TAG, "Saved xml to file");
     		
     			//Save time of day we downloaded file
     			Calendar cal = Calendar.getInstance();
@@ -378,7 +378,7 @@ public class PopStoryTab extends Activity implements Runnable {
     			datewriter.println( System.currentTimeMillis() );
     			fos.close();
     			datewriter.close();
-    			Log.i( TAG, "Saved xml download date to file");
+    			Log.d( TAG, "Saved xml download date to file");
 
     		} catch (FileNotFoundException	e) {
     			Log.e( TAG, e.toString() );
@@ -391,13 +391,13 @@ public class PopStoryTab extends Activity implements Runnable {
     	try {
     		FileInputStream fis = openFileInput(popfile);
     		saxParser =  factory.newSAXParser();
-    		Log.i( TAG, "Before: Parser - SAX");
+    		Log.d( TAG, "Before: Parser - SAX");
     		saxParser.parse( fis , myHandler);
     		
-    		Log.i( TAG, "AFTER: Parse - SAX");
+    		Log.d( TAG, "AFTER: Parse - SAX");
     	} catch (FileNotFoundException notfound) {
     		Log.e(TAG, "File not found.");
-    		//Log.i(TAG, "redownload data");
+    		//Log.d(TAG, "redownload data");
     		//updatepopstories = true;
 			//grabdata_popstories( strURL );
     	} catch (IOException ioe) {
@@ -408,7 +408,7 @@ public class PopStoryTab extends Activity implements Runnable {
     		Log.e(TAG, "Could not parse XML "  + se.getMessage());
     	}
     	saxelapsedTimeMillis = (System.currentTimeMillis() - saxstart ) / 1000;
-    	Log.i("SAX - TIMER", "Time it took in seconds:" + Long.toString(saxelapsedTimeMillis));
+    	Log.d("SAX - TIMER", "Time it took in seconds:" + Long.toString(saxelapsedTimeMillis));
     	String [][] r = { myHandler.getTitles() , myHandler.getImages(), myHandler.getLinks() };
 
     	return r; 
@@ -419,7 +419,7 @@ public class PopStoryTab extends Activity implements Runnable {
     public void onSaveInstanceState(Bundle instanceState) {
     	String TAG = "onSaveInstanceState - PopStoryTab";
 
-    	Log.i(TAG, "START");
+    	Log.d(TAG, "START");
     	//Store station list view
     	byte[] bufOfStations = null;
 
@@ -436,13 +436,13 @@ public class PopStoryTab extends Activity implements Runnable {
         } catch (IOException e) {
         	Log.e(TAG, e.toString());
         }
-        Log.i(TAG, "Saving lvresults"); //POPDATE
+        Log.d(TAG, "Saving lvresults"); //POPDATE
         instanceState.putByteArray(POPSTORYLISTVIEW, bufOfStations);
-        Log.i(TAG, "Saving Update Time");
+        Log.d(TAG, "Saving Update Time");
         instanceState.putString(POPDATE, popstorydate);
 
         if (ih != null){
-            Log.i(TAG, "Saving Image Urls");
+            Log.d(TAG, "Saving Image Urls");
         	instanceState.putStringArray(IMAGES, ih.getUrls() );
         }
 

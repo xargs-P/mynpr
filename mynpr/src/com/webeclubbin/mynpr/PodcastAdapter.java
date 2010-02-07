@@ -1,47 +1,70 @@
 package com.webeclubbin.mynpr;
 
-import java.util.HashMap;
-import java.util.Set;
+import java.io.File;
+import java.io.IOException;
 
 import android.app.Activity;
 import android.app.Dialog;
+import android.content.Context;
 import android.content.Intent;
-import android.graphics.Bitmap;
 import android.net.Uri;
 import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.ImageView;
-import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
-import android.widget.AdapterView.OnItemClickListener;
 
-public class SearchStationAdapter extends ArrayAdapter<Station> {
+public class PodcastAdapter extends ArrayAdapter<Podcast> {
 
-	String TAG = "SearchStationAdapter";
+	String TAG = "PodcastAdapter";
 	int ourlayoutview ;
-	ImageHelper im = null;
+	Podcast[] podcast = null;
+	Activity parentContext = null;
+	Dialog dialog = null;
 
-	SearchStationAdapter(Activity context, int ourview, Station[] stations) {
-		super(context, ourview, stations); 
-        ourlayoutview = ourview; 
-        im = new ImageHelper(context);
+	PodcastAdapter(Activity context, int ourview, Podcast[] p, Dialog d) {
+		super(context, ourview, p); 
+		Log.d(TAG, "Setup");
+		ourlayoutview = ourview; 
+        podcast = p;
+        parentContext = context;
+        dialog = d;
+        
+        Log.d(TAG,"Number of rows: " + p.length);
+
         //TODO what happens when we get no results?
-        Log.d(TAG, "Create SearchStationAdapter");
+        
     } 
 
 	
 	@Override
     public View getView(int position, View convertView, ViewGroup parent) {  
 		Log.d(TAG, "Start getView");
-        final View row=View.inflate( getContext() , ourlayoutview , null); 
-        final Station s =  this.getItem(position);   
+		
+		final View row; 
+        final Podcast pod =  this.getItem(position);  
+		if (convertView == null) {
+			row=View.inflate( getContext() , ourlayoutview , null); 
+		} else {
+			Log.d(TAG, "Use old view object");
+			row=convertView;
+		}
+         
         
-        final ImageView logo = (ImageView)row.findViewById(com.webeclubbin.mynpr.R.id.stationlogo);
+        Log.d(TAG, "set title");
+        final TextView title = (TextView)row.findViewById(com.webeclubbin.mynpr.R.id.title);
+        title.setText(pod.getTitle());
         
+        if (checkPlayedStatus(pod)){
+        	//we have played this file before, set different status
+        	final ImageView playstatus = (ImageView) row.findViewById(com.webeclubbin.mynpr.R.id.playstatus);
+        	playstatus.setImageResource(com.webeclubbin.mynpr.R.drawable.processing2);        	
+        }
+        
+       
+/*        
         Log.d(TAG, "set logo");
         if ( s.getLogo() != null ) {  
             
@@ -74,15 +97,25 @@ public class SearchStationAdapter extends ArrayAdapter<Station> {
         final HashMap<String, String> purls = s.getPUrl();
         
         final Activity act = (Activity) getContext();
+        */
         
         //TODO Grab URL titles
         
-        stream.setOnClickListener(new View.OnClickListener() {
+        title.setOnClickListener(new View.OnClickListener() {
             public void onClick( View v ) {
-                String TAG = "Pulse Stream Click: " + s.getName() ;
-
+                String TAG = "Podcast title Click: " ;
+                //TextView clickedTitle = (TextView) v;
+                //String textOfTitle = (String) clickedTitle.getText();
+                Log.d(TAG, pod.getTitle());
+                PlayListTab parent = (PlayListTab) parentContext;
+                parent.play(pod.getStation(), pod.getAudioUrl(), true);
+                dialog.cancel();
+                
+                //Setup status file for podcast
+                setPlayedStatus(pod);
+                
                 // If URL. list is 0 skip function
-                if (aurls.length != 0) {
+                /*if (aurls.length != 0) {
                 	final Dialog dialog = new Dialog(act);
 
                 	dialog.setContentView(com.webeclubbin.mynpr.R.layout.urlpopup);
@@ -107,96 +140,11 @@ public class SearchStationAdapter extends ArrayAdapter<Station> {
                 
                 	Log.d(TAG, "Show Dialog" );
                 	dialog.show();
-                }
+                }*/
             }
         });
-        mp3.setOnClickListener(new View.OnClickListener() {
-            public void onClick( View v ) {
-                final String TAG = "MP3 Click: " + s.getName() ;
-                
-                // If URL. list is 0 skip function
-                if (murls.length != 0) {
-                	final Dialog dialog = new Dialog(act);
 
-                	dialog.setContentView(com.webeclubbin.mynpr.R.layout.urlpopup);
-                	dialog.setTitle("Select MP3 Link");
-
-                	//Set up Logo
-                	ImageView image = (ImageView) dialog.findViewById(com.webeclubbin.mynpr.R.id.slogo);
-                	image.setImageDrawable(logo.getDrawable());
-                
-                	//Set up URL list
-                	ListView lv = (ListView) dialog.findViewById(com.webeclubbin.mynpr.R.id.urllist);
-                	Log.d(TAG, "String array: " + String.valueOf(  murls.length));
-                
-                	lv.setAdapter(new ArrayAdapter<String>(act,
-                		com.webeclubbin.mynpr.R.layout.urllist ,
-                        murls));
-                	
-                	lv.setOnItemClickListener(new OnItemClickListener() {
-                        public void onItemClick(AdapterView parent, View v, int position, long id) {
-                        	onItemClickHelper(v, position, act, dialog , s.getName(), s.getLogo() );
-                        }
-                    });
-                
-                	Log.d(TAG, "Show Dialog" );
-                	dialog.show();
-                }
-            }
-        });
-        podcast.setOnClickListener(new View.OnClickListener() {
-            public void onClick( View v ) {
-                String TAG = "Podcast Click: " + s.getName() ;
-
-                // If URL. list is 0 skip function
-                Set<String> u = purls.keySet();
-                String[] t = {""} ;
-                if (u.size() != 0) {
-                	final Dialog dialog = new Dialog(act);
-
-                	dialog.setContentView(com.webeclubbin.mynpr.R.layout.urlpopup);
-                	dialog.setTitle("Copy Podcast Link");
-
-                	//Set up Logo
-                	ImageView image = (ImageView) dialog.findViewById(com.webeclubbin.mynpr.R.id.slogo);
-                	image.setImageDrawable(logo.getDrawable());
-                
-                	//Set up URL list
-                	ListView lv = (ListView) dialog.findViewById(com.webeclubbin.mynpr.R.id.urllist);
-                	Log.d(TAG, "String array: " + String.valueOf(  u.size()) + u.toArray(t)[0]);
-                
-                	lv.setAdapter(new ArrayAdapter<String>(act,
-                		com.webeclubbin.mynpr.R.layout.urllist ,
-                		u.toArray(t)));
-                	
-                	lv.setOnItemClickListener(new OnItemClickListener() {
-                        public void onItemClick(AdapterView parent, View v, int position, long id) {
-                        	TextView t = (TextView)v;
-                        	String title = t.getText().toString();
-                        	//Grab out url for podcast
-                        	String urladdr = purls.get( title) ;
-                        	
-                        	/*ClipboardManager cm = (ClipboardManager) act.getSystemService(Context.CLIPBOARD_SERVICE);
-                        	cm.setText(url);
-                        	Toast.makeText(act, "Copied link to clipboard.", Toast.LENGTH_SHORT).show();
-                        	Toast.makeText(act, "Paste in your favorite RSS reader.", Toast.LENGTH_SHORT).show();*/
-                        	//onItemClickHelper(v, position, act, dialog , s.getName(), s.getLogo() );
-                        	PlayURL pu = new PlayURL();
-                        	pu.setLogo(s.getLogo());
-                        	pu.setRSS(true);
-                        	pu.setStation(s.getName());
-                        	pu.setTitle(title);
-                        	pu.setURL(urladdr);
-                        	SearchStationTab.launchhelper(pu, act, dialog );
-                        }
-                    });
-                
-                	Log.d(TAG, "Show Dialog" );
-                	dialog.show();
-                }
-            }
-        });
-        
+        /*
         //Set up Text for number of links
         TextView streamnum = (TextView)row.findViewById(com.webeclubbin.mynpr.R.id.streamnumber);
         TextView mp3num = (TextView)row.findViewById(com.webeclubbin.mynpr.R.id.mp3text);
@@ -204,9 +152,45 @@ public class SearchStationAdapter extends ArrayAdapter<Station> {
         streamnum.setText( String.valueOf( aurls.length ) );
         mp3num.setText( String.valueOf( murls.length ) );
         podnum.setText( String.valueOf( purls.size() ) );
-
+*/
         return(row); 
     }
+	
+	//setup podcast status file
+	private void setPlayedStatus(Podcast p){
+		final String PREFIX = "PODCAST";
+		final String TAG = "setPlayedStatus";
+		
+		File f = parentContext.getDir("pods", Context.MODE_PRIVATE);
+		String podcastStatusFile =  f.getPath() + File.separator + PREFIX + String.valueOf( p.getAudioUrl().hashCode() ) + String.valueOf( p.getPubDate().hashCode() );
+		Log.d(TAG, "Saving temp file: " + podcastStatusFile);
+		File podstatus = new File (podcastStatusFile);
+		if ( ! podstatus.exists() ){
+			//file does not exist
+			try {
+				podstatus.createNewFile();
+			} catch (IOException e) {
+				Log.e(TAG, "Problem saving temp file: " + podcastStatusFile);
+				Log.e(TAG, e.toString() );
+			}
+		}
+	}
+	//Check podcast status file
+	private boolean checkPlayedStatus(Podcast p){
+		final String PREFIX = "PODCAST";
+		final String TAG = "CheckPlayedStatus";
+		boolean status = false;
+		
+		File f = parentContext.getDir("pods", Context.MODE_PRIVATE);
+		String podcastStatusFile =  f.getPath() + File.separator + PREFIX + String.valueOf( p.getAudioUrl().hashCode() ) + String.valueOf( p.getPubDate().hashCode() );
+		
+		File podstatus = new File (podcastStatusFile);
+		
+		if ( podstatus.exists() ){
+			status = true;
+		} 
+		return status;
+	}
 	
 	//Setup Click listeners and dialogs if we need to.
 	public void onItemClickHelper(View v, int position, Activity a, final Dialog d, String stationname, String logo) {

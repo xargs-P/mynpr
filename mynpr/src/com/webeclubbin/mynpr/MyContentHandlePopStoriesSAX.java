@@ -19,19 +19,19 @@ public class MyContentHandlePopStoriesSAX extends DefaultHandler {
 	int count, tcount = 0;
 	public void startElement(String uri, String localName, 
 		String qName, Attributes atts) {
-		//Log.i(TAG, "startElement " + localName );
+		//Log.d(TAG, "startElement " + localName );
 
 		if (localName.equals("story"))  {
 			isStory = true; 
 			count = count + 1;
-			Log.i(TAG, "startElement " + localName );
+			Log.d(TAG, "startElement " + localName );
 		}
 		if (localName.equals("title") && isStory)  {
 			if ( noMoreTitles == true) {
 				isTitle = false; 
 			} else {
 				isTitle = true;
-				Log.i(TAG, "startElement " + localName );
+				Log.d(TAG, "startElement " + localName );
 			}
 		}
 		if (localName.equals("image") && isStory )  {
@@ -47,7 +47,7 @@ public class MyContentHandlePopStoriesSAX extends DefaultHandler {
 			if ( val != null) {
 				if ( val.equals("html")){
 					isLink = true;
-					Log.i(TAG, "startElement " + localName );
+					Log.d(TAG, "startElement " + localName );
 				}
 			}
 		}
@@ -56,15 +56,15 @@ public class MyContentHandlePopStoriesSAX extends DefaultHandler {
 	
 	public void characters(char[ ] chars, int start, int length) {
 		if(isStory && isTitle) {
-			Log.i(TAG,"found title text");
+			Log.d(TAG,"found title text");
 			title = title + new String(chars, start, length);
 		}
 		//if(isStory && isImage) {
-		//	Log.i(TAG,"found image text " );
+		//	Log.d(TAG,"found image text " );
 		//	image = image + new String(chars, start, length);
 		//}
 		if(isStory && isLink) {
-			Log.i(TAG,"found link text");
+			Log.d(TAG,"found link text");
 			link = link + new String(chars, start, length);
 		}
 	}
@@ -75,7 +75,7 @@ public class MyContentHandlePopStoriesSAX extends DefaultHandler {
 		if(localName.equals("title") && (noMoreTitles == false) && isStory ) {
 			isTitle = false;
 			noMoreTitles = true;
-			Log.i(TAG, count + " title " + "tcount " + tcount + title);
+			Log.d(TAG, count + " title " + "tcount " + tcount + title);
 			
 			title = title.trim();
 			if (supertitles == null){
@@ -98,7 +98,7 @@ public class MyContentHandlePopStoriesSAX extends DefaultHandler {
 			if (image.equals("")){
 				image = " ";
 			}
-			Log.i(TAG, count + " image " + image);
+			Log.d(TAG, count + " image " + image);
 			if (superimages == null){
 				superimages = image;
 				 
@@ -106,9 +106,9 @@ public class MyContentHandlePopStoriesSAX extends DefaultHandler {
 				superimages = superimages + SPLITTER + image;
 			}
 			image = "";
-			//Log.i(TAG, "count Story  " + count   );
-			//Log.i(TAG,  superthumbs  );
-			//Log.i(TAG, "count Images array" + Integer.toString(Pattern.compile(SPLITTER).split(superthumbs).length) );
+			//Log.d(TAG, "count Story  " + count   );
+			//Log.d(TAG,  superthumbs  );
+			//Log.d(TAG, "count Images array" + Integer.toString(Pattern.compile(SPLITTER).split(superthumbs).length) );
 			
 		} 
 
@@ -119,7 +119,7 @@ public class MyContentHandlePopStoriesSAX extends DefaultHandler {
 		
 		if (localName.equals("link") && isLink )  {
 			isLink = false;
-			Log.i(TAG, count + " Link " + link);
+			Log.d(TAG, count + " Link " + link);
 			if (superlinks == null){
 				superlinks = link;
 			}else{
@@ -149,14 +149,14 @@ public class MyContentHandlePopStoriesSAX extends DefaultHandler {
 			links = Pattern.compile(SPLITTER).split(superlinks);
 		}
 		
-		//Log.i(TAG, supertitles );
-		//Log.i(TAG, superimages );
-		//Log.i(TAG, superlinks);
+		//Log.d(TAG, supertitles );
+		//Log.d(TAG, superimages );
+		//Log.d(TAG, superlinks);
 		
-		Log.i(TAG, "count Titles array" + Integer.toString(titles.length) );
-		Log.i(TAG, "count Images array" + Integer.toString(images.length) );
-		Log.i(TAG, "count Links array" + Integer.toString(links.length) );
-		Log.i(TAG, "count Story  " + Integer.toString(count) );
+		Log.d(TAG, "count Titles array" + Integer.toString(titles.length) );
+		Log.d(TAG, "count Images array" + Integer.toString(images.length) );
+		Log.d(TAG, "count Links array" + Integer.toString(links.length) );
+		Log.d(TAG, "count Story  " + Integer.toString(count) );
     }
 	
 	public String[] getTitles() {

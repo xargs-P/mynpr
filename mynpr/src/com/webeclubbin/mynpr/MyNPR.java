@@ -46,39 +46,39 @@ public class MyNPR extends TabActivity {
         DisplayMetrics dm = new DisplayMetrics();
         getWindowManager().getDefaultDisplay().getMetrics(dm);
 
-        Log.i(TAG, "Setup TAB");
+        Log.d(TAG, "Setup TAB");
         tabHost = getTabHost();
         Intent tempip = new Intent();
         
-        Log.i(TAG, "Setup Pop Story Tab");
+        Log.d(TAG, "Setup Pop Story Tab");
         tempip.setClass(maincontext , com.webeclubbin.mynpr.PopStoryTab.class );
         tabHost.addTab(tabHost.newTabSpec(tPOP).setIndicator("Popular").setContent( tempip ));
         //tabHost.addTab(tabHost.newTabSpec(tPOP).setIndicator("What's Popular?").setContent( tempip ));
         
         Intent tempis = new Intent();
-        Log.i(TAG, "Setup Station Search Tab");
+        Log.d(TAG, "Setup Station Search Tab");
         tempis.setClass(maincontext , com.webeclubbin.mynpr.SearchStationTab.class );
         tabHost.addTab(tabHost.newTabSpec(tSEARCH).setIndicator("Stations").setContent( tempis ) );
         
         Intent tempipl = new Intent();
-        Log.i(TAG, "Playlist Tab");
+        Log.d(TAG, "Playlist Tab");
         tempipl.setClass(maincontext , com.webeclubbin.mynpr.PlayListTab.class );
         tabHost.addTab(tabHost.newTabSpec(tPLAY).setIndicator("Playlist").setContent( tempipl ) );
         
         if (savedInstanceState == null){
-        	Log.i(TAG, "Bundle savedInstanceState is null.");
+        	Log.d(TAG, "Bundle savedInstanceState is null.");
         	tabHost.setCurrentTab(0); 
         } else {
-        	Log.i(TAG, "Bundle savedInstanceState is NOT null.");
+        	Log.d(TAG, "Bundle savedInstanceState is NOT null.");
         	
         	final Set<String> ourset = savedInstanceState.keySet();
         	String[] s = {"temp"};
         	final String[] ourstrings = ourset.toArray(s);
         	final int bundlesize =  ourstrings.length;
-        	Log.i(TAG, "Bundle size: " + String.valueOf( bundlesize ) );
+        	Log.d(TAG, "Bundle size: " + String.valueOf( bundlesize ) );
         	
         	for(int i=0; i< bundlesize ; i++){
-        		Log.i(TAG, "Bundle contents: " + ourstrings[i]);
+        		Log.d(TAG, "Bundle contents: " + ourstrings[i]);
            }
 
         }
@@ -98,16 +98,16 @@ public class MyNPR extends TabActivity {
     //Broadcast intent from one tab to another
     public void broadcastToTab( Intent i, String permissions ){
     	String TAG = "broadcastToTab";
-    	Log.i(TAG, "Switch to tab");
+    	Log.d(TAG, "Switch to tab");
     	tabHost.setCurrentTabByTag(permissions);
-    	Log.i(TAG, "Sending intent");
+    	Log.d(TAG, "Sending intent");
     	//maincontext.sendBroadcast(i , permissions);
     	PackageManager pm = getPackageManager();
     	List<ResolveInfo> list = pm.queryBroadcastReceivers(i, PackageManager.GET_INTENT_FILTERS);
     	Iterator it = list.iterator();
     	while (it.hasNext()){
     		ResolveInfo r = (ResolveInfo)it.next();
-    		Log.i(TAG, r.toString() );
+    		Log.d(TAG, r.toString() );
     	}
     	maincontext.sendBroadcast(i );
     }
@@ -115,7 +115,7 @@ public class MyNPR extends TabActivity {
     //Check Priority level
     public void checkThreadPriority(){
     	String TAG = "checkThreadPriority";
-    	Log.i(TAG, "Start" );
+    	Log.d(TAG, "Start" );
     	Log.v(TAG, "MyNPR Process priority: " + Process.getThreadPriority(Process.myTid()));
     }
     
@@ -123,16 +123,16 @@ public class MyNPR extends TabActivity {
     public void raiseThreadPriority(){
     	//This save my butt http://www.anddev.org/viewtopic.php?p=1085
     	String TAG = "checkThreadPriority";
-    	Log.i(TAG, "Start" );
-    	Log.i(TAG, "Set Thread priority");
+    	Log.d(TAG, "Start" );
+    	Log.d(TAG, "Set Thread priority");
     	Process.setThreadPriority(Process.THREAD_PRIORITY_AUDIO);
     }
     
     //Lower Priority level
     public void lowerThreadPriority(){
     	String TAG = "lowerThreadPriority";
-    	Log.i(TAG, "Start" );
-    	Log.i(TAG, "Set Thread priority");
+    	Log.d(TAG, "Start" );
+    	Log.d(TAG, "Set Thread priority");
     	Process.setThreadPriority(Process.THREAD_PRIORITY_DEFAULT);
     }
     
@@ -142,7 +142,7 @@ public class MyNPR extends TabActivity {
     	super.onDestroy();
     	String TAG = "onDestroy()";
     	//Clear any notifications we may have.
-    	Log.i(TAG, "clear any hanging around notifications");
+    	Log.d(TAG, "clear any hanging around notifications");
     	//turnOffNotify();
     }
 

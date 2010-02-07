@@ -29,7 +29,7 @@ public class HTMLviewer extends Activity {
         if ( uri == null ) {
         	Log.e(TAG, "uri null");
         }
-        Log.i(TAG, uri.toString());
+        Log.d(TAG, uri.toString());
         
         webview = (WebView) findViewById(R.id.webview);
         webview.setWebViewClient(new InternalWebViewClient());
@@ -37,7 +37,7 @@ public class HTMLviewer extends Activity {
         WebSettings settings = webview.getSettings();
        	settings.setJavaScriptEnabled(true);
 
-       	Log.i(TAG, "Load url");
+       	Log.d(TAG, "Load url");
         webview.loadUrl(uri.toString());
     }
 
@@ -48,7 +48,7 @@ public class HTMLviewer extends Activity {
     	@Override
     	public boolean shouldOverrideUrlLoading(WebView view, String url) {
     		String TAG = "shouldOverrideUrlLoading";
-    		Log.i(TAG, "We have a new url to go to: " + url);
+    		Log.d(TAG, "We have a new url to go to: " + url);
     		view.loadUrl(url);
     		return true;
     	}
@@ -58,7 +58,7 @@ public class HTMLviewer extends Activity {
     public boolean onKeyDown(int keyCode, KeyEvent event) { 
     	String TAG = "web keydown";
         if ((keyCode == KeyEvent.KEYCODE_BACK) && webview.canGoBack()) { 
-        	Log.i(TAG, "Go back to previous webpage");
+        	Log.d(TAG, "Go back to previous webpage");
             webview.goBack(); 
             return true; 
         } 
@@ -80,7 +80,7 @@ public class HTMLviewer extends Activity {
     	i.putExtra(Intent.EXTRA_SUBJECT, webview.getTitle() + " [From myNPR]");
        
         //launch intent
-        Log.i(TAG, "Start Activity");
+        Log.d(TAG, "Start Activity");
         //startActivity(i);
         startActivity(Intent.createChooser(i, "Send to a Friend..."));
     }

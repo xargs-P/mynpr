@@ -1,7 +1,12 @@
 package com.webeclubbin.mynpr;
 
 import java.io.Serializable;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Set;
 import java.util.Vector;
+
+import android.util.Log;
 
 //Radio Station Object
 public class Station implements Cloneable, Serializable {
@@ -13,7 +18,8 @@ public class Station implements Cloneable, Serializable {
 	String orgurl = null;
 	Vector<String> astreamurls = new Vector<String>();
 	Vector<String> mstreamurls = new Vector<String>();
-	Vector<String> podcasturls = new Vector<String>();
+	//Vector<String, String> podcasturls = new Vector<String, String>();
+	HashMap<String, String> podcasturls = new HashMap<String, String>();
 		
 	final static String ORG = "Organization Home Page";
 	final static String ASTREAM = "Audio Stream"; 
@@ -42,8 +48,11 @@ public class Station implements Cloneable, Serializable {
 	public void setMUrl(String temp) {
 		mstreamurls.add(temp);
 	}
-	public void setPUrl(String temp) {
-		podcasturls.add(temp);
+	public void setPUrl(String url, String title) {
+		//podcasturls.add(temp);
+		//I am hoping the titles are unique
+		//If not something will get erased. :-)
+		podcasturls.put(title, url);
 	}
 	
 	
@@ -68,9 +77,23 @@ public class Station implements Cloneable, Serializable {
 		String [] temp = new String [0];
 		return (String[])mstreamurls.toArray(temp);
 	}
-	public String[] getPUrl() {
-		String [] temp = new String [0];
-		return (String[])podcasturls.toArray(temp);
+	public HashMap getPUrl() {
+		//String [] temp = new String [0];
+		//return (String[])podcasturls.toArray(temp);
+		return podcasturls;
+		/*Set<String> s = podcasturls.keySet();
+		String[] t = {""} ;
+		Iterator<String> it = s.iterator()
+		
+		while (it.hasNext()){
+			if (s.toArray(t).length == 1){
+				String[] temp = s.toArray(t);
+				if (temp[0] == null){
+					return null;
+				}
+			}
+		} */
+		//return s.toArray(t);
 	}
 	
 	public Object clone() throws CloneNotSupportedException
@@ -79,7 +102,7 @@ public class Station implements Cloneable, Serializable {
 		//… take care of any deep copies 
 		another.astreamurls = (Vector<String>) this.astreamurls.clone();
 		another.mstreamurls = (Vector<String>) this.mstreamurls.clone();
-		another.podcasturls = (Vector<String>) this.podcasturls.clone();
+		another.podcasturls = (HashMap<String,String>) this.podcasturls.clone();
 		return another;
 	}
 	

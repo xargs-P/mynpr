@@ -10,7 +10,7 @@ import android.util.Log;
 public class MyContentHandleSearchStationSAX extends DefaultHandler {
 	boolean isStation = false, isName = false, isMarket = false, isUrl = false, isLogo = false;
 	final String TAG = "MyContentHandleSearchStation";
-	String name = "", market = "", url = "", urlattr = "", logo = "";
+	String name = "", market = "", url = "", urlattr = "", logo = "", urlTitle = "";
 	String supernames = null, supermarkets = null, superlogos = null;
 	String superurlorg = null, superurla = null, superurlmp3 = null, superurlpod = null;
 	
@@ -23,7 +23,7 @@ public class MyContentHandleSearchStationSAX extends DefaultHandler {
 	int count = 0;
 	public void startElement(String uri, String localName, 
 		String qName, Attributes atts) {
-		Log.i(TAG, "startElement "+ localName);
+		Log.d(TAG, "startElement "+ localName);
 		if (localName.equals("station"))  {
 			isStation = true; 
 			count = count + 1;
@@ -37,18 +37,24 @@ public class MyContentHandleSearchStationSAX extends DefaultHandler {
 		//TODO Grab URL titles also
 		if ( localName.equals("url")   )  {
 			String val = atts.getValue("typeId") ;
-			Log.i(TAG, "val type: " + val);
+			String valTitle = atts.getValue("title") ;
+			Log.d(TAG, "val type: " + val);
+			Log.d(TAG, "val title: " + valTitle);
 			if ( val != null) {
-				if ( val.equals(Station.ORGID) || val.equals(Station.ASTREAMID) 
+				if ( val.equals(Station.ORGID) 
 						|| val.equals(Station.MP3STREAMID) || val.equals(Station.PODCASTID)){
 					isUrl = true;
 					urlattr = val;
+					if (val.equals(Station.PODCASTID)){
+						urlTitle = valTitle;
+					}
 				} else {
 					isUrl = false;
 					urlattr = "";
+					urlTitle = "";
 				}
 				if ( isUrl == true) {
-					Log.i(TAG, "startElement " + localName + " " + val);
+					Log.d(TAG, "startElement " + localName + " " + val);
 				}
 				
 			} else {
@@ -89,7 +95,7 @@ public class MyContentHandleSearchStationSAX extends DefaultHandler {
 			//Some stations have no URLs.
 			//So we need to check and dump them.
 			if ( s.getOUrl() == null){
-				Log.i(TAG, "Forget this station:" + s.getName() );
+				Log.d(TAG, "Forget this station:" + s.getName() );
 				//Erase this station
 				s = new Station();
 			}else {
@@ -114,7 +120,7 @@ public class MyContentHandleSearchStationSAX extends DefaultHandler {
 			}
 			
 			s.setName(name);
-			Log.i(TAG, count + " name " + name);
+			Log.d(TAG, count + " name " + name);
 			name = "";
 		} 
 
@@ -126,7 +132,7 @@ public class MyContentHandleSearchStationSAX extends DefaultHandler {
 				market = " ";
 			}
 			s.setMarket(market);
-			Log.i(TAG, count + " market " + market);
+			Log.d(TAG, count + " market " + market);
 
 			market = "";
 		} 
@@ -138,24 +144,24 @@ public class MyContentHandleSearchStationSAX extends DefaultHandler {
 			if (url.equals("")){
 				url = " ";
 			}
-			Log.i(TAG, count + " url " + url);
+			Log.d(TAG, count + " url " + url);
 			
 			if ( urlattr.equals(Station.ORGID) ){
 				//orgtemp = url; 
 				s.setOUrl(url);
-				Log.i(TAG + "end element", Station.ORG );
+				Log.d(TAG + "end element", Station.ORG );
 			} else if ( urlattr.equals(Station.ASTREAMID) ){
 				//atemp = url;
 				s.setAUrl(url);
-				Log.i(TAG + "end element", Station.ASTREAM );
+				Log.d(TAG + "end element", Station.ASTREAM );
 			} else if ( urlattr.equals(Station.MP3STREAMID) ){
 				//mp3temp = url;
 				s.setMUrl(url);
-				Log.i(TAG + "end element", Station.MP3STREAM );
+				Log.d(TAG + "end element", Station.MP3STREAM );
 			} else if ( urlattr.equals(Station.PODCASTID) ){
 				//podtemp = url;
-				s.setPUrl(url);
-				Log.i(TAG + "end element", Station.PODCAST );
+				s.setPUrl(url, urlTitle);
+				Log.d(TAG + "end element", Station.PODCAST );
 			}
 
 			url = "";
@@ -169,13 +175,13 @@ public class MyContentHandleSearchStationSAX extends DefaultHandler {
 				logo = " ";
 			}
 			s.setLogo(logo);
-			Log.i(TAG, count + " logo " + logo);
+			Log.d(TAG, count + " logo " + logo);
 			logo = "";
 		} 
 	}
 
 	public void endDocument (){	
-		Log.i(TAG, "Stations: " + stations.size() );
+		Log.d(TAG, "Stations: " + stations.size() );
     }
 	
 	public Station[] getStations() {

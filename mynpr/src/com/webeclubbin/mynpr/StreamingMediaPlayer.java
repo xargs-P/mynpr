@@ -22,7 +22,6 @@ import android.media.AudioManager;
 import android.media.MediaPlayer;
 import android.os.IBinder;
 import android.os.Process;
-import android.os.RemoteException;
 import android.telephony.PhoneStateListener;
 import android.telephony.TelephonyManager;
 import android.util.Log;
@@ -33,7 +32,7 @@ import android.util.Log;
  */ 
 public class StreamingMediaPlayer extends Service {
 
-	final static public String AUDIO_MIME =  "audio/mpeg";
+	final static public String AUDIO_MPEG =  "audio/mpeg";
 	final static public String BITERATE_HEADER =  "icy-br";
     private int INTIAL_KB_BUFFER ;
     private int BIT = 8 ;
@@ -51,6 +50,7 @@ public class StreamingMediaPlayer extends Service {
 	private Vector<MediaPlayer> mediaplayers = new Vector<MediaPlayer>(3);
 	private boolean started = false;
 	private boolean processHasStarted = false; 
+	private boolean regularStream = false;
 	private InputStream stream = null;
 	private URL url = null;
     private URLConnection urlConn = null;
@@ -59,6 +59,28 @@ public class StreamingMediaPlayer extends Service {
     private String audiourl = null;
     
     private Intent startingIntent = null;
+    
+    // listen for calls
+	// http://www.androidsoftwaredeveloper.com/2009/04/20/how-to-detect-call-state/ 
+	  final PhoneStateListener myPhoneListener = new PhoneStateListener() {
+		  public void onCallStateChanged(int state, String incomingNumber) {
+			  String TAG = "PhoneStateListener";
+			  
+			  switch (state) {
+			  	case TelephonyManager.CALL_STATE_RINGING:
+			  		Log.d(TAG, "Someone's calling. Let us stop the service");
+			  		sendMessage(PlayListTab.STOP);
+				  	break;
+			  	case TelephonyManager.CALL_STATE_OFFHOOK:
+				  	break;
+				case TelephonyManager.CALL_STATE_IDLE:
+				  	break;
+				default:
+				  	Log.d(TAG, "Unknown phone state = " + state);
+			  }
+		  }
+	  };
+    
     //private int currentStatus = -1;
 
     //This object will allow other processes to interact with our service
@@ -66,25 +88,25 @@ public class StreamingMediaPlayer extends Service {
         String TAG = "IStreamingMediaPlayer.Stub";
         // Returns Currently Station Name
         public String getStation(){
-        	Log.i(TAG, "getStation" );
+        	Log.d(TAG, "getStation" );
         	return station;
         }
         
         // Returns Currently Playing audio url
         public String getUrl(){
-        	Log.i(TAG, "getUrl" );
+        	Log.d(TAG, "getUrl" );
         	return audiourl;
         }
         
         // Check to see if service is playing audio
     	public boolean playing(){
-    		Log.i(TAG, "playing?" );
+    		Log.d(TAG, "playing?" );
     		return isPlaying();
     	}
     	
     	//Start playing audio
     	public void startAudio(){
-    		Log.i(TAG, "startAudio" );
+    		Log.d(TAG, "startAudio" );
     		raiseThreadPriority();
     		
     		Runnable r = new Runnable() {   
@@ -93,50 +115,15 @@ public class StreamingMediaPlayer extends Service {
     			}   
     		};   
     		new Thread(r).start(); 
-    		//onStart (startingIntent, 0);
-    		 
-    		/*Log.i(TAG, "Intent: " + startingIntent.getStringExtra(PlayListTab.URL));
-        	Log.i(TAG, "Station: " + startingIntent.getStringExtra(PlayListTab.STATION));
-        	
-        	processHasStarted = true;
-        	
-        	audiourl =  startingIntent.getStringExtra(PlayListTab.URL);
-        	station =  startingIntent.getStringExtra(PlayListTab.STATION);
-        	
-        	//Stop player if it is running
-        	if ( isPlaying() ) {
-        		stop();
-        	}
-    		
-    		try {
-    			counter = 0;
-    			downloadingMediaFile = new File(context.getCacheDir(),DOWNFILE + counter);
-         		downloadingMediaFile.deleteOnExit();
-         		
-        		startStreaming( audiourl );
-        	} catch (IOException e) {
-        		Log.i(TAG, e.toString() );
-        	}*/
     		
     	}
     	
     	//Stop playing audio
     	public void stopAudio() {
-    		Log.i(TAG, "stopAudio" );
+    		Log.d(TAG, "stopAudio" );
     		stop();
     	}
     	
-    	/*
-    	//Return current status of streaming service
-    	public int checkStatus() {
-    		int tempstat = currentStatus;
-    		if ( tempstat != -1 ) {
-    			//reset currentStatus back to normal since someone already
-    			//checked the status by calling this method
-    			currentStatus = -1;
-    		}
-    		return tempstat;
-    	} */
     };
     
     @Override 
@@ -144,30 +131,10 @@ public class StreamingMediaPlayer extends Service {
     	  super.onCreate();
     	  
     	  String TAG = "StreamingMediaPlayer - onCreate";
-    	  Log.i(TAG, "START");
+    	  Log.d(TAG, "START");
 
-    	  // listen for calls
-    	  // http://www.androidsoftwaredeveloper.com/2009/04/20/how-to-detect-call-state/
     	  
-    	  final PhoneStateListener myPhoneListener = new PhoneStateListener() {
-    		  public void onCallStateChanged(int state, String incomingNumber) {
-    			  String TAG = "PhoneStateListener";
-    			  
-    			  switch (state) {
-    			  	case TelephonyManager.CALL_STATE_RINGING:
-    			  		Log.i(TAG, "Someone's calling. Let us stop the service");
-    			  		sendMessage(PlayListTab.STOP);
-    				  	break;
-    			  	case TelephonyManager.CALL_STATE_OFFHOOK:
-    				  	break;
-    				case TelephonyManager.CALL_STATE_IDLE:
-    				  	break;
-    				default:
-    				  	Log.d(TAG, "Unknown phone state = " + state);
-    			  }
-    		  }
-    	  };
-    	  Log.i(TAG, "Setup Phone listener");
+    	  Log.d(TAG, "Setup Phone listener");
     	  TelephonyManager tm = (TelephonyManager)getSystemService(TELEPHONY_SERVICE);
     	  tm.listen(myPhoneListener, PhoneStateListener.LISTEN_CALL_STATE);
 
@@ -177,28 +144,38 @@ public class StreamingMediaPlayer extends Service {
     public void onStart (Intent intent, int startId){
     	super.onStart(intent, startId);
     	
-    	String TAG = "StreamingMediaPlayer - onStart";
-    	Log.i(TAG, "START");
+    	final String TAG = "StreamingMediaPlayer - onStart";
+    	Log.d(TAG, "START");
 
-    	Log.i(TAG, "Intent: " + intent.getStringExtra(PlayListTab.URL));
-    	Log.i(TAG, "Station: " + intent.getStringExtra(PlayListTab.STATION));
+    	Log.d(TAG, "Intent: " + intent.getStringExtra(PlayListTab.URL));
+    	Log.d(TAG, "Station: " + intent.getStringExtra(PlayListTab.STATION));
+    	Log.d(TAG, "RegularStream: " + intent.getBooleanExtra(PlayListTab.REGULARSTREAM, false));
     	
     	processHasStarted = true;
     	
     	audiourl =  intent.getStringExtra(PlayListTab.URL);
     	station =  intent.getStringExtra(PlayListTab.STATION);
     	
-    	Log.i(TAG,"Run startStreaming function");
-    	try {
-    		context = this;
-     		downloadingMediaFile = new File(context.getCacheDir(),DOWNFILE + counter);
-     		downloadingMediaFile.deleteOnExit();
-
-    		startStreaming( audiourl );
-     	    		
-    	} catch (IOException e) {
-    		Log.i(TAG, e.toString() );
+    	if (intent.getBooleanExtra(PlayListTab.REGULARSTREAM, false)){
+    		regularStream = true;
     	}
+    	
+    	Log.d(TAG,"Run startStreaming function");
+    
+    	context = this;
+     	downloadingMediaFile = new File(context.getCacheDir(),DOWNFILE + counter);
+     	downloadingMediaFile.deleteOnExit();
+
+     	Runnable r = new Runnable() {   
+     		public void run() {   
+     			try {
+     					startStreaming( audiourl );
+				} catch (IOException e) {
+						Log.d(TAG, e.toString() );
+				} 
+    	    }   
+    	};   
+    	new Thread(r).start(); 
     	
     }
     
@@ -207,7 +184,7 @@ public class StreamingMediaPlayer extends Service {
     	  super.onDestroy();
 
     	  String TAG = "StreamingMediaPlayer - onDestroy";
-    	  Log.i(TAG, "START");
+    	  Log.d(TAG, "START");
     	  
     	  // stop the service here
 
@@ -216,9 +193,9 @@ public class StreamingMediaPlayer extends Service {
     @Override
     public IBinder onBind (Intent intent){
     	String TAG = "StreamingMediaPlayer - onBind";
-    	Log.i(TAG, "START");
-    	Log.i(TAG, "Intent: " + intent.getStringExtra(PlayListTab.URL));
-    	Log.i(TAG, "Station: " + intent.getStringExtra(PlayListTab.STATION));
+    	Log.d(TAG, "START");
+    	Log.d(TAG, "Intent: " + intent.getStringExtra(PlayListTab.URL));
+    	Log.d(TAG, "Station: " + intent.getStringExtra(PlayListTab.STATION));
     	startingIntent = intent;
 
     	context = this;
@@ -241,6 +218,8 @@ public class StreamingMediaPlayer extends Service {
         
         sendMessage( PlayListTab.START );
         
+        
+
     	try {
     		url = new URL(mediaUrl);
     		urlConn = (HttpURLConnection)url.openConnection();
@@ -255,11 +234,11 @@ public class StreamingMediaPlayer extends Service {
     		}
     		
     		//See if we can handle this type 
-    		Log.i(TAG, "Content Type: " + ctype );
-    		if (ctype.contains(AUDIO_MIME) || ctype.equals("")){
+    		Log.d(TAG, "Content Type: " + ctype );
+    		if (ctype.contains(AUDIO_MPEG) || ctype.equals("")){
     			
     			String temp = urlConn.getHeaderField(BITERATE_HEADER);
-    			Log.i(TAG, "Bitrate: " + temp );
+    			Log.d(TAG, "Bitrate: " + temp );
     			if (temp != null){
     				bitrate = new Integer(temp).intValue();
     			}
@@ -277,32 +256,43 @@ public class StreamingMediaPlayer extends Service {
     		return;
     	} 
     	
-    	//Set up buffer size
-    	//Assume XX kbps * XX seconds / 8 bits per byte
-    	INTIAL_KB_BUFFER =  bitrate * SECONDS / BIT;
     	
-    	/*try {   
-    		downloadAudioIncrement(mediaUrl);
-        } catch (IOException e) {
-        	Log.e(TAG, "Unable to initialize the MediaPlayer for Audio Url = " + mediaUrl, e);
-        	sendMessage( PlayListTab.TROUBLEWITHAUDIO);
-        	stop();
-        	return;
-        }  */
-    	 
-		Runnable r = new Runnable() {   
-	        public void run() {   
-	            try {   
-	        		downloadAudioIncrement(mediaUrl);
-	            } catch (IOException e) {
-	            	Log.e(TAG, "Unable to initialize the MediaPlayer for Audio Url = " + mediaUrl, e);
-	            	sendMessage( PlayListTab.TROUBLEWITHAUDIO);
-	            	stop();
-	            	return;
-	            }   
-	        }   
-	    };   
-	    new Thread(r).start(); 
+
+	    if (regularStream){
+        	//Lets Start Streaming normally
+	    	Runnable r = new Runnable() {   
+    	        public void run() {   
+    	            try {   
+    	        		downloadAudio(mediaUrl);
+    	            } catch (IOException e) {
+    	            	Log.e(TAG, "Unable to initialize the MediaPlayer for Audio Url = " + mediaUrl, e);
+    	            	sendMessage( PlayListTab.TROUBLEWITHAUDIO);
+    	            	stop();
+    	            	return;
+    	            }   
+    	        }   
+    	    };   
+    	    new Thread(r).start(); 
+        } else {
+        	//Lets Start Streaming by downloading parts of the stream and playing it in pieces
+        	//Set up buffer size
+        	//Assume XX kbps * XX seconds / 8 bits per byte
+        	INTIAL_KB_BUFFER =  bitrate * SECONDS / BIT; 
+        	 
+    		Runnable r = new Runnable() {   
+    	        public void run() {   
+    	            try {   
+    	        		downloadAudioIncrement(mediaUrl);
+    	            } catch (IOException e) {
+    	            	Log.e(TAG, "Unable to initialize the MediaPlayer for Audio Url = " + mediaUrl, e);
+    	            	sendMessage( PlayListTab.TROUBLEWITHAUDIO);
+    	            	stop();
+    	            	return;
+    	            }   
+    	        }   
+    	    };   
+    	    new Thread(r).start(); 
+        }
     }
     
     /**  
@@ -321,7 +311,7 @@ public class StreamingMediaPlayer extends Service {
         	Log.e(TAG, "Unable to create InputStream for mediaUrl: " + mediaUrl);
         }
         
-		Log.i(TAG, "File name: " + downloadingMediaFile);
+		Log.d(TAG, "File name: " + downloadingMediaFile);
 		BufferedOutputStream bout = new BufferedOutputStream ( new FileOutputStream(downloadingMediaFile), 32 * 1024 );   
         byte buf[] = new byte[16 * 1024];
         int totalBytesRead = 0, incrementalBytesRead = 0, numread = 0;
@@ -329,7 +319,7 @@ public class StreamingMediaPlayer extends Service {
         do {
         	if (bout == null) {
         		counter++;
-        		Log.i(TAG, "FileOutputStream is null, Create new one: " + DOWNFILE + counter);
+        		Log.d(TAG, "FileOutputStream is null, Create new one: " + DOWNFILE + counter);
         		downloadingMediaFile = new File(context.getCacheDir(),DOWNFILE + counter);
         		downloadingMediaFile.deleteOnExit();
         		bout = new BufferedOutputStream ( new FileOutputStream(downloadingMediaFile) );	
@@ -340,7 +330,7 @@ public class StreamingMediaPlayer extends Service {
         	} catch (IOException e){
         		Log.e(TAG, e.toString());
         		if (stream != null){
-        			Log.i(TAG, "Bad read. Let's try to reconnect to source and continue downloading");
+        			Log.d(TAG, "Bad read. Let's try to reconnect to source and continue downloading");
         			urlConn = new URL(mediaUrl).openConnection(); 
         			urlConn.setConnectTimeout(1000 * 30);
         			urlConn.connect();   
@@ -381,6 +371,53 @@ public class StreamingMediaPlayer extends Service {
 
 
     }  
+
+    //Play Audio stream normally
+    public void downloadAudio(final String mediaUrl) throws IOException {
+    	final String TAG = "downloadAudio";
+
+		Runnable r = new Runnable() {   
+	        public void run() {   
+	        	MediaPlayer m = new MediaPlayer();
+	        	MediaPlayer.OnBufferingUpdateListener onBuff = new MediaPlayer.OnBufferingUpdateListener(){
+	        		public void onBufferingUpdate (MediaPlayer mp, int percent){
+	        			Log.d(TAG," Precent Buffered: " + percent);
+	        			if ( percent > 8 && percent < 11 ){
+	        				sendMessage( PlayListTab.STOPSPIN );
+	        			}
+	        		}
+	        	};
+	        	MediaPlayer.OnCompletionListener listener = new MediaPlayer.OnCompletionListener () {
+        			public void onCompletion(MediaPlayer mp){
+        				String TAG = "MediaPlayer.OnCompletionListener - Normal Streaming";
+        				Log.d(TAG, "Audio is done");
+        				stop();
+        				
+        			}
+        		};
+        		
+	            try {
+	            	m.setOnBufferingUpdateListener(onBuff);
+	            	m.setDataSource(mediaUrl);
+	            	Log.d(TAG, "prepare audio");
+	            	m.prepare();
+	            	m.start();
+	            	mediaplayers.add(m);
+	            } catch (IllegalArgumentException e) {
+	            	Log.e(TAG, "Unable to initialize the MediaPlayer for Audio Url = " + mediaUrl, e);
+	            	sendMessage( PlayListTab.TROUBLEWITHAUDIO);
+	            	stop();
+	            } catch (IOException e) {
+	            	Log.e(TAG, "Unable to initialize the MediaPlayer for Audio Url = " + mediaUrl, e);
+	            	sendMessage( PlayListTab.TROUBLEWITHAUDIO);
+	            	stop();
+	            }
+	        }   
+	    };  
+	    new Thread(r).start();
+    	
+    }  
+
     
     /**
      * Set Up player(s)
@@ -388,7 +425,7 @@ public class StreamingMediaPlayer extends Service {
     private void  setupplayer(File partofaudio) {
     	final File f = partofaudio;
     	final String TAG = "setupplayer";
-    	Log.i(TAG, "File " + f.getAbsolutePath());
+    	Log.d(TAG, "File " + f.getAbsolutePath());
 	    Runnable r = new Runnable() {
 	        public void run() {
 	        	
@@ -397,9 +434,9 @@ public class StreamingMediaPlayer extends Service {
 	        		
 	        		MediaPlayer.OnCompletionListener listener = new MediaPlayer.OnCompletionListener () {
 	        			public void onCompletion(MediaPlayer mp){
-	        				String TAG = "MediaPlayer.OnCompletionListener";
-	        				Log.i(TAG, "Start");
-	        				Log.i(TAG, "Current size of mediaplayer list: " + mediaplayers.size() );
+	        				String TAG = "MediaPlayer.OnCompletionListener - Partial download";
+	        				Log.d(TAG, "Start");
+	        				Log.d(TAG, "Current size of mediaplayer list: " + mediaplayers.size() );
 	        				boolean waitingForPlayer = false;
 	        				boolean leave = false;
 	        				while (mediaplayers.size() <= 1 && leave == false){
@@ -431,7 +468,7 @@ public class StreamingMediaPlayer extends Service {
 	        				if (leave == false){
 	        					MediaPlayer mp2 = mediaplayers.get(1);
 	        					mp2.start();
-	        					Log.i(TAG, "Start another player");
+	        					Log.d(TAG, "Start another player");
     			        	
 	        					mp.release();
 	        					mediaplayers.remove(mp);
@@ -445,9 +482,9 @@ public class StreamingMediaPlayer extends Service {
 	            	mp.setDataSource(ins.getFD());
 	        		mp.setAudioStreamType(AudioManager.STREAM_MUSIC);
 	        		
-	        		Log.i(TAG, "Setup player completion listener");
+	        		Log.d(TAG, "Setup player completion listener");
 	        		mp.setOnCompletionListener(listener);
-	        		Log.i(TAG, "Prepare Media Player " + f);
+	        		Log.d(TAG, "Prepare Media Player " + f);
 	        		
 	        		if ( ! started  ){
 	        			mp.prepare();
@@ -458,7 +495,7 @@ public class StreamingMediaPlayer extends Service {
 	        		
 	        		mediaplayers.add(mp);
 	        		if ( ! started  ){
-		        		Log.i(TAG, "Start Media Player " + f);
+		        		Log.d(TAG, "Start Media Player " + f);
 		        		startMediaPlayer();
 		        	}
 	        	} catch  (IllegalStateException	e) {
@@ -479,7 +516,7 @@ public class StreamingMediaPlayer extends Service {
 	    // Wait indefinitely for the thread to finish
 	    if ( ! started  ){
 	    	try {
-	    		Log.i(TAG, "Start and wait for first audio clip to be prepared.");
+	    		Log.d(TAG, "Start and wait for first audio clip to be prepared.");
 	    		ourthread.join();
 	    		// Finished
 	    	} catch (InterruptedException e) {
@@ -493,7 +530,7 @@ public class StreamingMediaPlayer extends Service {
     private void removefile (){
     	String TAG = "removefile";
     	File temp = new File(context.getCacheDir(),DOWNFILE + playedcounter);
-    	Log.i(TAG, temp.getAbsolutePath());
+    	Log.d(TAG, temp.getAbsolutePath());
     	temp.delete();
     	playedcounter++;
     }
@@ -507,7 +544,7 @@ public class StreamingMediaPlayer extends Service {
     	//Grab out first media player
     	started = true;
     	MediaPlayer mp = mediaplayers.get(0);
-    	Log.i(TAG,"Start Player");
+    	Log.d(TAG,"Start Player");
     	mp.start(); 
     	
     	sendMessage(PlayListTab.STOPSPIN);
@@ -517,19 +554,33 @@ public class StreamingMediaPlayer extends Service {
     //Stop Audio
     public void stop(){
     	String TAG = "STOP";
-    	Log.i(TAG,"Entry");
+    	Log.d(TAG,"Entry");
+    	
+    	if (regularStream == true){
+    		sendMessage(PlayListTab.RESETPLAYSTATUS);
+    	} 
+    	regularStream = false;
     	
     	try {
-    		if (! mediaplayers.isEmpty() ){
-    			MediaPlayer mp = mediaplayers.get(0);
-    			if (mp.isPlaying()){
-    				Log.i(TAG,"Stop Player");
-    				mp.pause();
-    			}
+    		
+    		if (mediaplayers != null){
+    			if (! mediaplayers.isEmpty() ){
+        			final MediaPlayer mp = mediaplayers.get(0);
+        			if (mp.isPlaying()){
+        				Log.d(TAG,"Stop Player");
+        				Runnable r = new Runnable() {   
+        	    	        public void run() {   
+        	    	        	mp.stop();  
+        	    	        }   
+        	    	    };   
+        	    	    new Thread(r).start(); 
+        				
+        			}
+        		}
     		}
     		
     		if (stream != null){
-    			Log.i(TAG,"Close stream");
+    			Log.d(TAG,"Close stream");
     			stream.close();
     		}
     		stream = null;
@@ -538,6 +589,11 @@ public class StreamingMediaPlayer extends Service {
     		//	sendMessage(PlayListTab.STOP);
     		//}
     		//sendMessage(PlayListTab.RESETPLAYSTATUS);
+    		
+    		//Take off listener
+    		Log.d(TAG, "Remove Phone listener");
+      	  	TelephonyManager tm = (TelephonyManager)getSystemService(TELEPHONY_SERVICE);
+      	  	tm.listen(myPhoneListener, PhoneStateListener.LISTEN_NONE);
     		stopSelf();
     		
 
@@ -553,7 +609,7 @@ public class StreamingMediaPlayer extends Service {
     //Is the streamer playing audio?
     public boolean isPlaying() {
     	String TAG = "isPlaying";
-    	Log.i(TAG, " = "  + processHasStarted);
+    	Log.d(TAG, " = "  + processHasStarted);
     	/*boolean result = false;
     	try {
     		MediaPlayer mp = mediaplayers.get(0);
@@ -576,13 +632,13 @@ public class StreamingMediaPlayer extends Service {
     	Intent i = new Intent(MyNPR.tPLAY);
 
     	i.putExtra(PlayListTab.MSG, m);
-    	Log.i(TAG, "Broadcast Message intent");
+    	Log.d(TAG, "Broadcast Message intent");
     	context.sendBroadcast (i) ;
     }
     
     /*private void checkThreadPriority(){
     	String TAG = "checkThreadPriority";
-    	Log.i(TAG, "Start" );
+    	Log.d(TAG, "Start" );
     	//Process.setThreadPriority(Process.THREAD_PRIORITY_AUDIO); 
     	Log.v(TAG, "Process priority: " + Process.getThreadPriority(Process.myTid()));
     	//Process.THREAD_PRIORITY_FOREGROUND
@@ -590,7 +646,7 @@ public class StreamingMediaPlayer extends Service {
     
     private void raiseThreadPriority(){
     	String TAG = "raiseThreadPriority";
-    	Log.i(TAG, "Start" );
+    	Log.d(TAG, "Start" );
     	Process.setThreadPriority(Process.THREAD_PRIORITY_AUDIO); 
     	//Log.v(TAG, "Process priority: " + Process.getThreadPriority(Process.myTid()));
     	//Process.THREAD_PRIORITY_FOREGROUND

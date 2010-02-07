@@ -11,6 +11,7 @@ import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Set;
 import java.util.Vector;
 import java.util.regex.Pattern;
@@ -24,27 +25,32 @@ public class PlayList  {
 
 	private HashMap<String, Vector<String> > plist = new HashMap<String, Vector<String> >();
 	private HashMap<String, String> logos = new HashMap<String, String>();
+	//setup for podcasts variable: <Station Name, <Title, url>>
+	private HashMap<String, HashMap<String, String>> podcasts = new HashMap<String, HashMap<String, String>>();
 	private String TAG = "PlayList";
 	private final String playlistfile = "playlist";
-	private final String SPLITTERAUDIO = "<MYNPR>";
-	private final String SPLITTERSTATION = "#MYNPR#";
+	private static final String SPLITTERAUDIO = "<MYNPR>";
+	public static final String SPLITTERRSS = "@RSS@";
+	public static final String SPLITTERRSSTITLE = "@RSSTITLE@";
+	private static final String SPLITTERSTATION = "#MYNPR#";
 	private Activity context = null;
 	private boolean saved = true;
 	
 	PlayList(Activity context) {
-        Log.i(TAG, "Constructor PlayList");
+        Log.d(TAG, "Constructor PlayList");
         this.context = context;
     } 
 	
 	//Add audio url
 	public void addUrl(String station, String url){
-		Log.i(TAG, "addUrl: " + station);
+		Log.d(TAG, "addUrl: " + station);
 		
 		if ( plist.containsKey(station) ) {
-			Log.i(TAG, "add url, station already here");
+		
+			Log.d(TAG, "add url, station already here");
 			Vector<String> v = (Vector<String>) plist.get(station);
 			
-			Log.i(TAG, "urls : " + v.size());
+			Log.d(TAG, "urls : " + v.size());
 			String[] t = {""} ;
 			String[] temp = v.toArray(t);
 			boolean alreadyHere = false;
@@ -58,11 +64,32 @@ public class PlayList  {
 				plist.put(station, v);
 			}
 		} else {
-			Log.i(TAG, "add station and url");
+			Log.d(TAG, "add station and url");
 			Vector<String> v = new Vector<String>(); 
 			v.add(url);
 			plist.put(station, v);
+		}
+
+		saved = false;
+	}
+	
+	//Add RSS url
+	public void addRSSUrl(PlayURL pu){
+		Log.d(TAG, "addRSSUrl: " + pu.getStation());
+		
+		if ( podcasts.containsKey(pu.getStation()) ) {
+				
+			Log.d(TAG, "add url, station already here");
+			HashMap<String, String> v = (HashMap<String, String>) podcasts.get(pu.getStation());
 			
+			Log.d(TAG, "urls : " + v.size());
+			v.put(pu.getTitle(), pu.getURL());
+			podcasts.put(pu.getStation(), v);
+		} else {
+			Log.d(TAG, "add station and url");
+			HashMap<String, String> v = new HashMap<String, String>(); 
+			v.put(pu.getTitle(), pu.getURL());
+			podcasts.put(pu.getStation(), v);
 		}
 		saved = false;
 	}
@@ -74,29 +101,31 @@ public class PlayList  {
 	
 	//Add station to logo
 	public void addStation(String station, String logo){
-		Log.i(TAG, "AddStation: " + station);
+		Log.d(TAG, "AddStation: " + station);
 		logos.put(station,logo);
 		saved = false;
 	}
 	
 	//Get Stations
 	public String[] getStations(){
-		Log.i(TAG, "getStations");
-		Set<String> s = plist.keySet();
+		Log.d(TAG, "getStations");
+		//Set<String> s = plist.keySet();
+		Set<String> s = logos.keySet();
 		String[] t = {""} ;
-		Log.i(TAG, "Number of Stations: " + s.toArray(t).length);
+		Log.d(TAG, "Number of Stations: " + s.toArray(t).length);
 		if (s.toArray(t).length == 1){
 			String[] temp = s.toArray(t);
 			if (temp[0] == null){
 				return null;
 			}
 		}
-		return s.toArray(t);
+		return s.toArray(t); 
+		
 	}
 	
 	//Get Logos
 	public String[] getLogos(){
-		Log.i(TAG, "getLogos");
+		Log.d(TAG, "getLogos");
 		Collection<String> v = logos.values();
 		String[] t = {""} ;
 		return v.toArray(t);
@@ -104,21 +133,27 @@ public class PlayList  {
 	
 	//Get Logo
 	public String getLogo(String station){
-		Log.i(TAG, "getLogo");
+		Log.d(TAG, "getLogo");
 		return logos.get(station);
 	}
 	
 	//Grab audio urls
 	public String[] getUrls(String station){
-		Log.i(TAG, "get urls for station: " + station);
+		Log.d(TAG, "get urls for station: " + station);
 		Vector<String> urls = (Vector<String>) plist.get(station);
 		if (urls != null){
-			Log.i(TAG, "urls : " + urls.size());
+			Log.d(TAG, "urls : " + urls.size());
 			String[] t = {""} ;
 			return urls.toArray(t);
 		} else {
 			return null;
 		}
+	}
+	
+	//Grab RSS URLs
+	public HashMap<String, String> getRSSUrls(String station){
+		Log.d(TAG, "send out rss urls");
+		return podcasts.get(station);
 	}
 	
 	//Load data from file
@@ -134,16 +169,24 @@ public class PlayList  {
             BufferedReader br = new BufferedReader(new InputStreamReader(in));
             
             String strLine;
-            Log.i(TAG,"loop through file");
+            Log.d(TAG,"loop through file");
             //Read File Line By Line
             while ((strLine = br.readLine()) != null)   {
-            	Log.i(TAG,strLine);
+            	Log.d(TAG,strLine);
             	if ( strLine.contains(SPLITTERAUDIO) ) {
             		String [] s = Pattern.compile(SPLITTERAUDIO).split(strLine);
             		addUrl(s[0], s[1]);
             	} else if ( strLine.contains(SPLITTERSTATION) ) {
             		String [] s = Pattern.compile(SPLITTERSTATION).split(strLine);
             		addStation(s[0], s[1]);
+            	} else if ( strLine.contains(SPLITTERRSS) ) {
+            		String [] s = Pattern.compile(SPLITTERRSS).split(strLine);
+            		PlayURL pu = new PlayURL();
+            		pu.setRSS(true);
+            		pu.setStation(s[0]);
+            		pu.setTitle(s[1]);
+            		pu.setURL(s[2]);
+            		addRSSUrl(pu);
             	}
             	
             }
@@ -169,20 +212,44 @@ public class PlayList  {
     		DataOutputStream out = new DataOutputStream(fos);
             BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(out));
             
-            Log.i(TAG,"loop through file");
+            Log.d(TAG,"loop through file");
             String [] s = getStations();
-            //Read File Line By Line
+            //Save File Line By Line
             for (int i = 0; i <  s.length; i++)   {
             	String strLine = s[i] + SPLITTERSTATION + logos.get(s[i]);
             	bw.write(strLine);
             	bw.newLine();
             	
             	String [] a = getUrls(s[i]);
-            	for (int y = 0; y <  a.length; y++) {
+            	int len = 0;
+            	if (a != null){
+            		len = a.length;
+            	}
+            	//Process audio urls
+            	for (int y = 0; y <  len; y++) {
+
             		strLine = s[i] + SPLITTERAUDIO + a[y];
+            		
             		bw.write(strLine);
             		bw.newLine();
             	}
+            	//Process rss urls
+            	HashMap <String, String> rss = getRSSUrls(s[i]);
+            	Set<String> rset = null;
+            	if (rss != null){
+            		rset = rss.keySet();
+            	}
+            	 
+                if (rset != null){
+                	Iterator<String> riterator = rset.iterator();
+                	while (riterator.hasNext()) { 
+                		String title = riterator.next();
+                		String rssurl = rss.get(title);
+                		strLine = s[i] + SPLITTERRSS + title + SPLITTERRSS + rssurl;
+                    	bw.write(strLine);
+                    	bw.newLine();
+                	}
+                }
 
             }
             bw.close();
@@ -200,11 +267,11 @@ public class PlayList  {
 	public void deleteList() {
 		String TAG = "deleteList";
 		
-    	Log.i(TAG, "remove: " + playlistfile );
+    	Log.d(TAG, "remove: " + playlistfile );
     	context.deleteFile(playlistfile);
     	
     	//Reset variables
-    	Log.i(TAG, "Reset variables");
+    	Log.d(TAG, "Reset variables");
     	plist = new HashMap<String, Vector<String> >();
     	logos = new HashMap<String, String>();
     	
@@ -212,10 +279,10 @@ public class PlayList  {
 	}
 	
 	//Dump data so we can save in a Bundle
-	public String [] dumpDataOut() {
+	public String [] dumpDataOut() { 
 		String TAG = "dumpDataOut";
 		
-		Log.i(TAG, "Start");
+		Log.d(TAG, "Start");
 		
     	Vector<String> lineofdata = new Vector<String>();
     	String [] s = getStations();
@@ -224,13 +291,31 @@ public class PlayList  {
     	}
         //Grab data out
         for (int i = 0; i <  s.length; i++)   {
-        	Log.i(TAG, s[i]);
+        	Log.d(TAG, s[i]);
         	lineofdata.add(  s[i] + SPLITTERSTATION + logos.get(s[i]) );
         	
         	String [] a = getUrls(s[i]);
-        	for (int y = 0; y <  a.length; y++) {
+        	int len = 0;
+        	if (a != null){
+        		len = a.length;
+        	}
+        	for (int y = 0; y <  len; y++) {
         		lineofdata.add( s[i] + SPLITTERAUDIO + a[y] );
         	}
+        	//Process rss urls
+        	HashMap <String, String> rss = getRSSUrls(s[i]);
+        	Set<String> rset = null; 
+        	if (rss != null){
+        		rset = rss.keySet();
+        	}
+            if (rset != null){
+            	Iterator<String> riterator = rset.iterator();
+            	while (riterator.hasNext()) { 
+            		String title = riterator.next();
+            		String rssurl = rss.get(title);
+            		lineofdata.add(  s[i] + SPLITTERRSS + title + SPLITTERRSS + rssurl );
+            	}
+            }
 
         }
         return lineofdata.toArray(s);
@@ -240,16 +325,24 @@ public class PlayList  {
 	public void dumpDataIn(String [] d) {
 		String TAG = "dumpDataIn";
 		
-		Log.i(TAG, "Start");
+		Log.d(TAG, "Start");
 		
 		for (int i = 0; i < d.length; i++)   {
-        	Log.i(TAG,d[i]);
+        	Log.d(TAG,d[i]);
         	if ( d[i].contains(SPLITTERAUDIO) ) {
         		String [] s = Pattern.compile(SPLITTERAUDIO).split(d[i]);
         		addUrl(s[0], s[1]);
         	} else if ( d[i].contains(SPLITTERSTATION) ) {
         		String [] s = Pattern.compile(SPLITTERSTATION).split(d[i]);
         		addStation(s[0], s[1]);
+        	}  else if ( d[i].contains(SPLITTERRSS) ) {
+        		String [] s = Pattern.compile(SPLITTERRSS).split(d[i]);
+        		PlayURL pu = new PlayURL();
+        		pu.setRSS(true);
+        		pu.setStation(s[0]);
+        		pu.setTitle(s[1]);
+        		pu.setURL(s[2]);
+        		addRSSUrl(pu);
         	}
         }
 		saved = false;

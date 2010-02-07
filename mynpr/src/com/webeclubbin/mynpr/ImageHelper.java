@@ -1,13 +1,9 @@
 package com.webeclubbin.mynpr;
 
-import java.io.BufferedInputStream;
-import java.io.BufferedOutputStream;
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStreamWriter;
 import java.net.URL;
 import java.net.URLConnection;
 import java.util.HashMap;
@@ -32,7 +28,7 @@ public class ImageHelper {
 	    
 	ImageHelper(Activity c) {
 		context = c;
-        Log.i(TAG, "Constructor ImageHelper");
+        Log.d(TAG, "Constructor ImageHelper");
     } 
     //Grab image from URL and create bitmap from it
     public Bitmap getImageBitmap(String url) { 
@@ -40,7 +36,7 @@ public class ImageHelper {
         String TAG = "getImageBitmap";
         processImage(url); 
         bm = imagestorage.get(url);
-        Log.i(TAG, "Return image");
+        Log.d(TAG, "Return image");
         //Return bitmap
         return bm; 
     } 
@@ -49,8 +45,8 @@ public class ImageHelper {
     public void setImageStorage(String[] url) { 
         String TAG = "setImageStorage";
         if ( url != null ) {
-        	Log.i(TAG, "Number of image urls: " + String.valueOf(url.length));
-        	Log.i(TAG, "Cycle through");
+        	Log.d(TAG, "Number of image urls: " + String.valueOf(url.length));
+        	Log.d(TAG, "Cycle through");
         	for (int i=0; i < url.length; i++){
         		if ( (url[i] == null) ||  ( url[i].equals(" ") ) || ( url[i].equals("") ) ) {  
         			continue;
@@ -79,26 +75,26 @@ public class ImageHelper {
     	String imagefile = f.getPath() + File.separator + PREFIX + String.valueOf( url.hashCode() ) + "." + suffix;
     	
     	if (bm == null) {
-    		Log.i(TAG, "See if we can grab image from disk cache. Not in memory: " + url);
+    		Log.d(TAG, "See if we can grab image from disk cache. Not in memory: " + url);
     		
     		//See if we have the file saved in a cache file
 
     		File image = new File (imagefile);
     		if ( image.exists() ){
-    			Log.i(TAG, "Found image in cache dir " + imagefile );
+    			Log.d(TAG, "Found image in cache dir " + imagefile );
     			bm = BitmapFactory.decodeFile(imagefile);
     			
     			if (bm == null) {
-    				Log.i(TAG, "We could not read file. We need to redownload");
-    				Log.i(TAG, "Delete local file");
+    				Log.d(TAG, "We could not read file. We need to redownload");
+    				Log.d(TAG, "Delete local file");
     				image.delete();
     			} else {
-    				Log.i(TAG, "Storing image in memory" );
+    				Log.d(TAG, "Storing image in memory" );
 					imagestorage.put(url, bm);
     			}
 
     		} else {
-    			Log.i(TAG, "Did NOT find image in cache dir " + imagefile);
+    			Log.d(TAG, "Did NOT find image in cache dir " + imagefile);
     		}
     		
     		//Just in case we did not get the image from cache
@@ -109,7 +105,7 @@ public class ImageHelper {
     				conn.setConnectTimeout(1000 * 5);
     				conn.setReadTimeout(1000 * 5);
     				//conn.connect();
-    				Log.i(TAG, "grabbing " + url );
+    				Log.d(TAG, "grabbing " + url );
     				InputStream is = conn.getInputStream(); 
     				//BufferedInputStream bis = new BufferedInputStream(is, 8192);
     				//BufferedInputStream bis = new BufferedInputStream(is);
@@ -123,19 +119,19 @@ public class ImageHelper {
     				{ 
     					fos.write(b); 
     				} 
-    				Log.i(TAG," writing done"); 
+    				Log.d(TAG," writing done"); 
     				is.close(); 
     				fos.close(); 
-    				Log.i(TAG," Create bitmap"); 
+    				Log.d(TAG," Create bitmap"); 
     				bm = BitmapFactory.decodeFile (imagefile); 
     				//bis.close(); 
     				//is.close(); 
     				
     				if (bm != null) {
-    					Log.i(TAG, "Storing image in memory" );
+    					Log.d(TAG, "Storing image in memory" );
     					imagestorage.put(url, bm);
     				} else {
-    					Log.i( TAG, "Unable to download image " + url );
+    					Log.d( TAG, "Unable to download image " + url );
     				}
         
     			} catch (IOException e) { 
@@ -150,18 +146,18 @@ public class ImageHelper {
     					outToFile.flush(); 
     					outToFile.close(); 
 
-    					Log.i( TAG, "Saved Image to file: " + imagefile);
+    					Log.d( TAG, "Saved Image to file: " + imagefile);
     				} catch (FileNotFoundException	e) {
     					Log.e( TAG, e.toString() );
     				} catch (IOException ioe) {
     					Log.e(TAG, "Unable to save file locally " + ioe.getMessage() );
     				}
     			} else {
-    				Log.i( TAG, "Skip saving file since we did not download it" );
+    				Log.d( TAG, "Skip saving file since we did not download it" );
     			}*/
     		}
     	} else {
-    		Log.i(TAG, "found image in storage memory");
+    		Log.d(TAG, "found image in storage memory");
     	}
     	
     }
@@ -185,8 +181,8 @@ public class ImageHelper {
         float scaleHeight = (float) ratio ;
         //float scaleWidth = (float) (w * ratio) ; 
         //float scaleHeight = (float) (h * ratio) ; 
-        Log.i(TAG, "resId=" + resId + " scaleWidth=" + scaleWidth + " scaleHeight=" + scaleHeight) ;
-        Log.i(TAG, "resId=" + resId + " Width=" + width + " Height=" + height) ;
+        Log.d(TAG, "resId=" + resId + " scaleWidth=" + scaleWidth + " scaleHeight=" + scaleHeight) ;
+        Log.d(TAG, "resId=" + resId + " Width=" + width + " Height=" + height) ;
   	  //float scaleWidth = ((float) newWidth) / width;
   	  //float scaleHeight = ((float) newHeight) / height;
 
