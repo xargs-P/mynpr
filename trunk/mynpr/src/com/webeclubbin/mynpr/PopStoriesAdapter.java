@@ -22,14 +22,16 @@ public class PopStoriesAdapter extends ArrayAdapter<String> {
 	PopStoriesAdapter(Activity context, int ourview, String[] t, String[] i, ImageHelper imagehelper) {
 		super(context, ourview, t); 
 		
-		Log.i(TAG,"Creation");
+		Log.d(TAG,"Creation");
         title = t.clone();
         image = i.clone();
         ourlayoutview = ourview;
         this.context=context;  
         
+        Log.d(TAG,"Number of rows: " + t.length);
+        
         if (imagehelper != null){
-        	Log.i(TAG,"Store imagehelper we received");
+        	Log.d(TAG,"Store imagehelper we received");
         	this.im = imagehelper;
         } else {
         	im = new ImageHelper(context);
@@ -46,7 +48,7 @@ public class PopStoriesAdapter extends ArrayAdapter<String> {
 	@Override
     public View getView(int position, View convertView, ViewGroup parent) {  
          
-    	Log.i(TAG,"getView");
+    	Log.d(TAG,"getView");
         View row=View.inflate(context, ourlayoutview, null);  
         TextView label=(TextView)row.findViewById(com.webeclubbin.mynpr.R.id.popstoryrowlabel);  
 
@@ -55,7 +57,7 @@ public class PopStoriesAdapter extends ArrayAdapter<String> {
         ImageView icon = (ImageView)row.findViewById(com.webeclubbin.mynpr.R.id.thumbnail);
         if ( (image[position] != null) &&  ( ! image[position].equals(" ") ) && ( ! image[position].equals("") ) ) {  
             
-            Log.i(TAG, "image " + Integer.toString(position) + " " + image[position] );
+            Log.d(TAG, "image " + Integer.toString(position) + " " + image[position] );
             Bitmap b = im.getImageBitmap( image[position] );
             icon.setImageBitmap( b );
         }  else {

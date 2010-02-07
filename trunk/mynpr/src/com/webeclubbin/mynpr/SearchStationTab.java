@@ -6,6 +6,7 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
@@ -42,6 +43,7 @@ import android.view.View.OnClickListener;
 import android.view.View.OnKeyListener;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.EditText;
@@ -110,12 +112,12 @@ public class SearchStationTab extends Activity implements Runnable {
       		   if (header.getVisibility() == View.GONE){
 
       			   header.setVisibility(View.VISIBLE);
-      			   Log.i(TAG,"Show hidden views");
+      			   Log.d(TAG,"Show hidden views");
       		   } else {
-      			   Log.i(TAG,"Process user input");
+      			   Log.d(TAG,"Process user input");
       			   String searchtext = ed.getText().toString();
       			   searchtext = searchtext.trim();
-      			   Log.i(TAG, "TEXT" + searchtext + "TEXT");
+      			   Log.d(TAG, "TEXT" + searchtext + "TEXT");
       			   Pattern p = Pattern.compile("^[0-9]+$");
       			   Matcher m = p.matcher( searchtext );
       			   boolean zip = m.matches(); 
@@ -124,10 +126,10 @@ public class SearchStationTab extends Activity implements Runnable {
       			   boolean citystate = m.matches(); 
       			   boolean grabdata = true;
       			   if ( zip == true) {
-      				   Log.i(TAG,"found zip");
+      				   Log.d(TAG,"found zip");
       				   searchquery="&zip=" + searchtext;
       			   } else if ( citystate == true) {
-      				   Log.i(TAG,"Found city , state");
+      				   Log.d(TAG,"Found city , state");
       				   loc = Pattern.compile(",").split(searchtext);
       				   city = loc[0].trim();
       				   city = city.toLowerCase();
@@ -164,7 +166,11 @@ public class SearchStationTab extends Activity implements Runnable {
         txtsearch.setOnKeyListener(new OnKeyListener(){
         	public boolean onKey(View v, int keyCode, KeyEvent event) {
         		if ( event.getKeyCode() == KeyEvent.KEYCODE_ENTER){
-        			Log.i(TAG, "Text Search box - Enter Pressed: Run search");
+        			Log.d(TAG, "Text Search box - Enter Pressed: Run search");
+        			// close soft keyboard 
+        			InputMethodManager inputManager = (InputMethodManager) maincontext.getSystemService(Context.INPUT_METHOD_SERVICE); 
+        			inputManager.hideSoftInputFromWindow( v.getWindowToken(), InputMethodManager.HIDE_IMPLICIT_ONLY); 
+        			
         			button_search.performClick();
         			return true;
         		} else {
@@ -175,44 +181,44 @@ public class SearchStationTab extends Activity implements Runnable {
         
         //Setup any saved views
         if (savedInstanceState == null){
-        	Log.i(TAG, "Bundle savedInstanceState is null.");
+        	Log.d(TAG, "Bundle savedInstanceState is null.");
         } else {
-        	Log.i(TAG, "Bundle savedInstanceState is NOT null.");
+        	Log.d(TAG, "Bundle savedInstanceState is NOT null.");
         	
         	final Set<String> ourset = savedInstanceState.keySet();
         	String[] s = {"temp"};
         	final String[] ourstrings = ourset.toArray(s);
         	final int bundlesize =  ourstrings.length;
-        	Log.i(TAG, "Bundle size: " + String.valueOf( bundlesize ) );
+        	Log.d(TAG, "Bundle size: " + String.valueOf( bundlesize ) );
         	
         	for(int i=0; i< bundlesize ; i++){
-        		Log.i(TAG, "Bundle contents: " + ourstrings[i]);
+        		Log.d(TAG, "Bundle contents: " + ourstrings[i]);
         	}
         	
         	int visibility = savedInstanceState.getInt(HIDESEARCH);
         	final LinearLayout header = (LinearLayout) findViewById( com.webeclubbin.mynpr.R.id.header);
-        	Log.i(TAG, "Current Visibility " + header.getVisibility() );
-        	Log.i(TAG, "old header visibility " + String.valueOf(visibility ) );
-        	Log.i(TAG, "View GONE " + String.valueOf(View.GONE ) );
-        	Log.i(TAG, "View VISIBLE " + String.valueOf(View.VISIBLE ) );
+        	Log.d(TAG, "Current Visibility " + header.getVisibility() );
+        	Log.d(TAG, "old header visibility " + String.valueOf(visibility ) );
+        	Log.d(TAG, "View GONE " + String.valueOf(View.GONE ) );
+        	Log.d(TAG, "View VISIBLE " + String.valueOf(View.VISIBLE ) );
         	header.setVisibility(visibility);
-        	Log.i(TAG, " Visibility after setting" + header.getVisibility() );
+        	Log.d(TAG, " Visibility after setting" + header.getVisibility() );
         	
         	byte[] b = savedInstanceState.getByteArray(STATIONLISTVIEW);
         	if ( b != null) {
         		try {     	    
         	        // Deserialize from a byte array
-        			Log.i(TAG, "Deserialize Stations from saved Bundle");
+        			Log.d(TAG, "Deserialize Stations from saved Bundle");
         	        ObjectInputStream in = new ObjectInputStream(new ByteArrayInputStream(b));
         	        stationstodisplay = (Station[]) in.readObject();
         	        in.close();
         	        
         	        if ( stationstodisplay != null ) {
         	        	//Update the list view
-        	        	Log.i(TAG, "Update list view for stations");
+        	        	Log.d(TAG, "Update list view for stations");
         	        	updatesearchstationscreen();
         	        } else {
-        	        	Log.i(TAG, "Skipping list view update, null station list");
+        	        	Log.d(TAG, "Skipping list view update, null station list");
         	        }
         	    } catch (ClassNotFoundException e) {
         	    	Log.e(TAG, e.toString());
@@ -249,7 +255,7 @@ public class SearchStationTab extends Activity implements Runnable {
     private void updatesearchstationscreen(){
     	String TAG = "updatesearchstationscreen";
     	
-    	Log.i(TAG, "ENTER");
+    	Log.d(TAG, "ENTER");
 
     	final LinearLayout header = (LinearLayout) findViewById( com.webeclubbin.mynpr.R.id.header);   	
  		
@@ -257,7 +263,7 @@ public class SearchStationTab extends Activity implements Runnable {
     			com.webeclubbin.mynpr.R.layout.stationrow, stationstodisplay) );
  		
 		//Tell UI to update our list
-		Log.i(TAG, "update screen - invalidate");
+		Log.d(TAG, "update screen - invalidate");
 		lvsearch.invalidate();
 		header.setVisibility(View.GONE);
 		
@@ -279,7 +285,7 @@ public class SearchStationTab extends Activity implements Runnable {
     	try {
     		url = new URL(strURL);
     		urlConn = url.openConnection();
-    		Log.i( TAG, "Got data for SAX " + strURL);
+    		Log.d( TAG, "Got data for SAX " + strURL);
     	} catch (IOException ioe) {
     		Log.e( TAG, "Could not connect to " +  strURL);
     	}
@@ -290,9 +296,11 @@ public class SearchStationTab extends Activity implements Runnable {
     	//Parse xml
     	try {
     		saxParser =  factory.newSAXParser();
-    		Log.i( TAG, "Before: Parser - SAX");
-    		saxParser.parse( urlConn.getInputStream() , myHandler);
-    		Log.i( TAG, "AFTER: Parse - SAX");
+    		Log.d( TAG, "Before: Parser - SAX");
+    		InputStream is = urlConn.getInputStream();
+    		saxParser.parse( is , myHandler);
+    		is.close();
+    		Log.d( TAG, "AFTER: Parse - SAX");
     	} catch (IOException ioe) {
     		Log.e(TAG, "Invalid XML format?? " + ioe.getMessage() );
     	} catch (ParserConfigurationException pce) {
@@ -302,7 +310,7 @@ public class SearchStationTab extends Activity implements Runnable {
     	}
     	saxelapsedTimeMillis = (System.currentTimeMillis() - saxstart ) / 1000;
     	
-    	Log.i("SAX - TIMER", "Time it took in seconds:" + Long.toString(saxelapsedTimeMillis));
+    	Log.d("SAX - TIMER", "Time it took in seconds:" + Long.toString(saxelapsedTimeMillis));
 
     	return myHandler.getStations();
     }
@@ -319,7 +327,7 @@ public class SearchStationTab extends Activity implements Runnable {
    		try {
    			url = new URL(strURL);
    			urlConn = url.openConnection();
-   			Log.i( TAG, "Got data");
+   			Log.d( TAG, "Got data");
    		} catch (IOException ioe) {
    			Log.e( TAG, "Could not connect to " + strURL );
    		}
@@ -333,12 +341,12 @@ public class SearchStationTab extends Activity implements Runnable {
     	    //Read File Line By Line
     	    while ((strLine = br.readLine()) != null)   {
     	    	String temp = strLine.toLowerCase();
-    	    	Log.i(TAG, strLine);
+    	    	Log.d(TAG, strLine);
     	    	//Look for files we want
     	    	if ( temp.startsWith(filetoken) ){
     	    		String [] s = Pattern.compile(SPLITTER).split(temp);
     	    		radio.add(s[1]);
-    	    		Log.i(TAG, "Found audio " + s[1]);
+    	    		Log.d(TAG, "Found audio " + s[1]);
     	    	}
     	    }
     	    //Close the streams
@@ -353,7 +361,7 @@ public class SearchStationTab extends Activity implements Runnable {
     	String[] r = null;
     	if ( radio.size() != 0 ) {
     		r = (String[])radio.toArray(t);
-    		Log.i(TAG, "Found total: " + String.valueOf( r.length ) );
+    		Log.d(TAG, "Found total: " + String.valueOf( r.length ) );
     	}
     	return r;
     }
@@ -369,7 +377,7 @@ public class SearchStationTab extends Activity implements Runnable {
    		try {
    			url = new URL(strURL);
    			urlConn = url.openConnection();
-   			Log.i( TAG, "Got data");
+   			Log.d( TAG, "Got data");
    		} catch (IOException ioe) {
    			Log.e( TAG, "Could not connect to " + strURL );
    		}
@@ -381,11 +389,11 @@ public class SearchStationTab extends Activity implements Runnable {
     	    //Read File Line By Line
     	    while ((strLine = br.readLine()) != null)   {
     	    	String temp = strLine.toLowerCase();
-    	    	Log.i(TAG, strLine);
+    	    	Log.d(TAG, strLine);
     	    	//Look for file we want
     	    	if ( temp.startsWith(filetoken) ){
     	    		radio.add(temp);
-    	    		Log.i(TAG, "Found audio " + temp);
+    	    		Log.d(TAG, "Found audio " + temp);
     	    	}
     	    }
     	    //Close the streams
@@ -399,7 +407,7 @@ public class SearchStationTab extends Activity implements Runnable {
     	String[] r = null;
     	if ( radio.size() != 0 ) {
     		r = (String[])radio.toArray(t);
-    		Log.i(TAG, "Found total: " + String.valueOf( r.length ) );
+    		Log.d(TAG, "Found total: " + String.valueOf( r.length ) );
     	}
     	return r;
     }
@@ -409,7 +417,7 @@ public class SearchStationTab extends Activity implements Runnable {
     public void onSaveInstanceState(Bundle instanceState) {
     	String TAG = "onSaveInstanceState - SearchStationTab";
 
-    	Log.i(TAG, "START");
+    	Log.d(TAG, "START");
     	//Store station list view
     	byte[] bufOfStations = null;
     	try {
@@ -425,9 +433,9 @@ public class SearchStationTab extends Activity implements Runnable {
         	Log.e(TAG, e.toString());
         }
         
-        Log.i(TAG, "Saving stationstodisplay");
+        Log.d(TAG, "Saving stationstodisplay");
         instanceState.putByteArray(STATIONLISTVIEW, bufOfStations);
-        Log.i(TAG, "Saving " + HIDESEARCH);
+        Log.d(TAG, "Saving " + HIDESEARCH);
         final LinearLayout header = (LinearLayout) findViewById( com.webeclubbin.mynpr.R.id.header);
         instanceState.putInt(HIDESEARCH, header.getVisibility() );
     	super.onSaveInstanceState(instanceState);
@@ -437,20 +445,20 @@ public class SearchStationTab extends Activity implements Runnable {
 	public static void launchhelper( String[] s , final Activity a, final Dialog previousdialog, final String station, final String logo) {
 		//TODO Let users select which link they want to play
 		String TAG = "launchhelper";
-		Log.i(TAG, "START" );
+		Log.d(TAG, "START" );
 		
 		Uri uri = null;
         Intent i = null;
         
         if (s == null){
-        	Log.i(TAG, "No data received" );
+        	Log.d(TAG, "No data received" );
 			Toast.makeText(a, "Unable to grab audio. Please try again.", Toast.LENGTH_LONG).show();
 			return;
         }
         
 		if (s.length == 1){
 			String playthis = s[0];
-			Log.i(TAG, "Only one url: " + playthis );
+			Log.d(TAG, "Only one url: " + playthis );
 			i = new Intent(Intent.ACTION_VIEW); 
         	uri = Uri.parse( playthis );
 
@@ -462,18 +470,18 @@ public class SearchStationTab extends Activity implements Runnable {
         		urlConn = (HttpURLConnection)url.openConnection();
         		//See if this is a type we can handle
         		String ctype = urlConn.getContentType () ;
-        		Log.i(TAG, "Content Type: " + ctype );
+        		Log.d(TAG, "Content Type: " + ctype );
         		if (ctype == null){
         			ctype = "";
         		}
         		 
-        		if (ctype.contains(StreamingMediaPlayer.AUDIO_MIME) || ctype.equals("")){
+        		if (ctype.contains(StreamingMediaPlayer.AUDIO_MPEG) || ctype.equals("") ){
         			
         			i = new Intent(MyNPR.tPLAY);
 
-        			i.putExtra(PlayListTab.URL, uri.toString());
                     i.putExtra(PlayListTab.STATION, station);
                     i.putExtra(PlayListTab.LOGO, logo);
+                    i.putExtra(PlayListTab.URL, uri.toString());
                     
                     Uri u = i.getData();
                     if ( u == null){
@@ -484,17 +492,17 @@ public class SearchStationTab extends Activity implements Runnable {
                     }
                     Log.v(TAG, "mime type: " + i.getType());
                     //launch intent
-                    Log.i(TAG, "Launch Playlist Tab");
+                    Log.d(TAG, "Launch Playlist Tab");
                     if (previousdialog != null){
                     	previousdialog.dismiss();
                     }
 
                     MyNPR parent = (MyNPR) a.getParent();
                     
-                    Log.i(TAG, "Switch to playlist tab");
+                    Log.d(TAG, "Switch to playlist tab");
                     parent.tabHost.setCurrentTabByTag(MyNPR.tPLAY);
                     
-                    Log.i(TAG, "Broadcast playlist intent");
+                    Log.d(TAG, "Broadcast playlist intent");
                     a.sendBroadcast (i) ;
                      
         		} else {
@@ -503,7 +511,7 @@ public class SearchStationTab extends Activity implements Runnable {
                     i = new Intent(Intent.ACTION_VIEW, uri, a, com.webeclubbin.mynpr.HTMLviewer.class  );
                     
                     //launch intent
-                    Log.i(TAG, "Launch HTML viewer");
+                    Log.d(TAG, "Launch HTML viewer");
                     a.startActivity(i);
         		}
 	
@@ -542,15 +550,15 @@ public class SearchStationTab extends Activity implements Runnable {
 					//Check data we get back
 					if ( r == null ) {
 						//Create toast telling user we have nothing.
-						Log.i(TAG, "No data returned" );
+						Log.d(TAG, "No data returned" );
 						Toast.makeText(a, "No Audio Found inside Station's Playlist", Toast.LENGTH_LONG).show();
 					} else if ( (r.length == 1) && (! r[0].toLowerCase().endsWith(PLS)) && (! r[0].toLowerCase().endsWith(M3U)) ) {
-						Log.i(TAG, "Found One" );
+						Log.d(TAG, "Found One" );
 						
 						launchhelper(r, a, d, station, logo);
 
 					} else {
-						Log.i(TAG, "Found Several or a list: " );
+						Log.d(TAG, "Found Several or a list: " );
 						//Let users select which link they want to play
 						launchhelper(r, a, d, station, logo);
 					}
@@ -558,12 +566,99 @@ public class SearchStationTab extends Activity implements Runnable {
 			});
     	
 			if ( previousdialog != null){
-				Log.i(TAG, "Show Dialog and dismiss old one" );
+				Log.d(TAG, "Show Dialog and dismiss old one" );
 				previousdialog.dismiss();
 			}
 			d.show();
 		}
 	}
+	
+	//Launch URL user selected and display dialog if more than one choice
+	public static void launchhelper( final PlayURL pu , final Activity a, final Dialog previousdialog) {
+		//TODO Let users select which link they want to play
+		String TAG = "launchhelper";
+		Log.d(TAG, "START" );
+		
+		Uri uri = null;
+        Intent i = null;
+        
+        if (pu == null){
+        	Log.d(TAG, "No data received" );
+			Toast.makeText(a, "Unable to grab audio. Please try again.", Toast.LENGTH_LONG).show();
+			return;
+        }
+        
+		
+		String playthis = pu.getURL();
+		Log.d(TAG, "Only one url: " + playthis );
+		i = new Intent(Intent.ACTION_VIEW); 
+        uri = Uri.parse( playthis );
+
+        URL url;
+        URLConnection urlConn = null;
+
+        try {
+        	url = new URL(playthis);
+        	urlConn = (HttpURLConnection)url.openConnection();
+        	//See if this is a type we can handle
+        	String ctype = urlConn.getContentType () ;
+        	Log.d(TAG, "Content Type: " + ctype );
+        	if (ctype == null){
+        		ctype = "";
+        	}
+        	 
+        	if (ctype.contains(StreamingMediaPlayer.AUDIO_MPEG) || ctype.contains(PlayListTab.RSS_MIME) || ctype.contains(PlayListTab.XML_MIME) || ctype.equals("") ){
+        		
+        		i = new Intent(MyNPR.tPLAY);
+        		
+        		i.putExtra(PlayListTab.URL, pu.getURL());
+                i.putExtra(PlayListTab.STATION, pu.getStation());
+                i.putExtra(PlayListTab.LOGO, pu.getLogo());
+                    
+                if (ctype.contains(PlayListTab.RSS_MIME) || ctype.contains(PlayListTab.XML_MIME) || pu.isRSS()){
+                	Log.d(TAG, "RSS content");
+                   	i.putExtra(PlayList.SPLITTERRSS, true);
+                   	i.putExtra(PlayList.SPLITTERRSSTITLE, pu.getTitle());
+                }
+                    
+                Uri u = i.getData();
+                if ( u == null){
+                   	Log.e(TAG, "uri null");
+                } else {
+                   	Log.v(TAG, "uri okay: " + u.toString());
+                }
+                
+                Log.v(TAG, "mime type: " + i.getType());
+                //launch intent
+                Log.d(TAG, "Launch Playlist Tab");
+                if (previousdialog != null){
+                   	previousdialog.dismiss();
+                }
+
+                MyNPR parent = (MyNPR) a.getParent();
+                    
+                Log.d(TAG, "Switch to playlist tab");
+                parent.tabHost.setCurrentTabByTag(MyNPR.tPLAY);
+                    
+                Log.d(TAG, "Broadcast playlist intent");
+                a.sendBroadcast (i) ;
+                     
+        	} else {
+
+                uri = Uri.parse( playthis );
+                i = new Intent(Intent.ACTION_VIEW, uri, a, com.webeclubbin.mynpr.HTMLviewer.class  );
+                    
+                //launch intent
+                Log.d(TAG, "Launch HTML viewer");
+                a.startActivity(i);
+        	}
+	
+        } catch (IOException ioe) {
+        	Log.e( TAG, "Could not connect to " +  playthis );
+        } 
+		
+	}
+
 	
     /** Set up Menu for this Tab */
     @Override
