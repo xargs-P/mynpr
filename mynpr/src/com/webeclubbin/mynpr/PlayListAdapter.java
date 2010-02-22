@@ -17,14 +17,19 @@ import javax.xml.parsers.SAXParserFactory;
 import org.xml.sax.SAXException;
 
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.app.Dialog;
 import android.app.ProgressDialog;
+import android.content.DialogInterface;
+import android.content.Intent;
 import android.graphics.Bitmap;
 import android.os.Handler;
 import android.os.Message;
 import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.View.OnLongClickListener;
+import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
@@ -90,7 +95,7 @@ public class PlayListAdapter extends ArrayAdapter<String> {
         		
         		audiourl.setOnClickListener(new View.OnClickListener() {
                     public void onClick( View v ) {
-                    	String TAG = "Playlist List Click";
+                    	String TAG = "Audio URL Playlist List Click";
                         Log.d(TAG, "Grab url and play");
                         TextView t = (TextView) v;
                         String oururl = (String) t.getText();
@@ -99,23 +104,35 @@ public class PlayListAdapter extends ArrayAdapter<String> {
                         p.play(stations[position], oururl, false);
 
                     }
-                });
-        		/*setOnLongClickListener(View.OnLongClickListener l)
-        		  audiourl.setOnLongClickListener(new View.OnLongClickListener() {
-                    public void onLongClick( View v ) {
-                    	String TAG = "Playlist Long Click";
-                        Log.d(TAG, "Create dialog to delete");
-                        TextView t = (TextView) v;
-                        String oururl = (String) t.getText();
-                        
-                        PlayListTab p = (PlayListTab) context; 
-                        p.play(stations[position], oururl);
-						//We need to modify playlist inside playlisttab
-						//Also we need to determine if this is the last link for the station and if so, delete the station
-						//We also need to reset the adapter
-                    }
-                });
-        		*/
+                }); 
+        		
+        		audiourl.setOnLongClickListener(new OnLongClickListener() {
+            		public boolean onLongClick(View view){
+            			//Confirm user wants to delete this item
+            			final String TAG = "PlayListTab - Delete Row - AudioURL";
+            			Log.d(TAG, "Delete Row "  );
+            			final TextView t = (TextView) view;
+            			AlertDialog.Builder builder = new AlertDialog.Builder(context);
+            			builder.setMessage("Are you sure you want to delete:\n" + t.getText() )
+            			       .setCancelable(false)
+            			       .setPositiveButton("Yes", new DialogInterface.OnClickListener() {
+            			           public void onClick(DialogInterface dialog, int id) {
+            			        	   Log.d(TAG, "Delete: " + t.getText());
+            			        	   //Delete item from playlist
+            			        	   sendMessage(stations[position], (String)t.getText(),  PlayListTab.URL);
+            			           }
+            			       })
+            			       .setNegativeButton("No", new DialogInterface.OnClickListener() {
+            			           public void onClick(DialogInterface dialog, int id) {
+            			                dialog.cancel();
+            			           }
+            			       });
+            			AlertDialog alert = builder.create();
+            			alert.show();
+            			return true;
+            		}
+            	});
+        		
         		row.addView(audiourl);
         	}
         	
@@ -145,7 +162,7 @@ public class PlayListAdapter extends ArrayAdapter<String> {
 	
             		audiourl.setOnClickListener(new View.OnClickListener() {
                         public void onClick( View v ) {
-                        	String TAG = "Playlist List Click";
+                        	String TAG = "RSS Playlist List Click";
                             
                             LinearLayout ll = (LinearLayout) v;
                             TextView t = (TextView) ll.findViewById( com.webeclubbin.mynpr.R.id.audiourl );
@@ -165,12 +182,42 @@ public class PlayListAdapter extends ArrayAdapter<String> {
                             Runnable r = new Runnable() {   
                     			public void run() {   
                     				processPodcastList(rssurl, stations[position]);
-                    			}   
+                    			}    
                     		};   
                     		new Thread(r).start();
                             
                         }
-                    });
+                    }); 
+               		
+            		audiourl.setOnLongClickListener(new OnLongClickListener() {
+                		public boolean onLongClick(View view){
+                			//Confirm user wants to delete this item
+                			final String TAG = "PlayListTab - Delete Row - RSS";
+                			Log.d(TAG, "Delete Row "  );
+                			
+                			final LinearLayout ll = (LinearLayout) view;
+                			final TextView t = (TextView) ll.findViewById(com.webeclubbin.mynpr.R.id.audiourl);
+                			AlertDialog.Builder builder = new AlertDialog.Builder(context);
+                			
+                			builder.setMessage("Are you sure you want to delete:\n" + t.getText() )
+                			       .setCancelable(false)
+                			       .setPositiveButton("Yes", new DialogInterface.OnClickListener() {
+                			           public void onClick(DialogInterface dialog, int id) {
+                			        	   Log.d(TAG, "Delete: " + t.getText());
+                			        	   //Delete item from playlist
+                			        	   sendMessage(stations[position], (String)t.getText(),  PlayList.SPLITTERRSSTITLE);
+                			           }
+                			       })
+                			       .setNegativeButton("No", new DialogInterface.OnClickListener() {
+                			           public void onClick(DialogInterface dialog, int id) {
+                			                dialog.cancel();
+                			           }
+                			       });
+                			AlertDialog alert = builder.create();
+                			alert.show();
+                			return true;
+                		}
+                	});
 
             		row.addView(audiourl);
             	}
@@ -268,13 +315,6 @@ public class PlayListAdapter extends ArrayAdapter<String> {
         	   	lv.setAdapter(new PodcastAdapter(context,
         	    		com.webeclubbin.mynpr.R.layout.podcast ,
         	            pods, dialog));
-        	   	
-        	   	
-        	    	/* lv.setOnItemClickListener(new OnItemClickListener() {
-        	            public void onItemClick(AdapterView parent, View v, int position, long id) {
-        	            	onItemClickHelper(v, position, act, dialog , s.getName(), s.getLogo() );
-        	            }
-        	        }); */
         	    	
         	   	Log.d(TAG, "Show dialog");
         	   	dialog.show();
@@ -283,5 +323,24 @@ public class PlayListAdapter extends ArrayAdapter<String> {
         		
         }
     };
+    
+    //Send Message to PlaylistTab
+    private void sendMessage(String station, String title, String type){
+    	String TAG = "sendMessage to PlayListTab";
+    	Intent i = new Intent(MyNPR.tPLAY);
+
+    	i.putExtra(PlayListTab.STATION, station);
+    	if (type == PlayList.SPLITTERRSSTITLE){
+    		i.putExtra(PlayList.SPLITTERRSSTITLE, true);
+    		i.putExtra(PlayList.SPLITTERRSSTITLE, title);
+    	} else if (type == PlayListTab.URL){
+    		i.putExtra(PlayListTab.URL, title);
+    	}
+    	
+    	i.putExtra(PlayListTab.STATION, station);
+    	i.putExtra(PlayListTab.DEL_REQUEST, PlayListTab.DEL_REQUEST);
+    	Log.d(TAG, "Broadcast Message intent");
+    	context.sendBroadcast (i) ;
+    }
 	
 }

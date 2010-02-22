@@ -32,7 +32,7 @@
 			android:layout_height="wrap_content">
 			<ImageView
 				android:id="@+id/pulsestream"
-				android:src="@drawable/pulsestream"
+				android:src="@drawable/pulselinks"
 				android:layout_width="wrap_content"
 				android:layout_height="wrap_content"
 				android:layout_gravity="center_horizontal"/>

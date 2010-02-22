@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+	
+	<item android:state_pressed="true"
+		android:drawable="@color/darkorange" />   <!-- pressed -->
+ 	<!-- <item android:state_selected="true" 
+		android:drawable="@android:color/bright_foreground_dark_inverse" />    selected/highlighted -->
+	<!--  Default should be last since Android goes from top down evaluation
+	http://developer.android.com/resources/tutorials/views/hello-formstuff.html
+	 -->
+ 	<item android:drawable="@color/white" /> <!-- default -->
+</selector>

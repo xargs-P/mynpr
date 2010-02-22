@@ -18,4 +18,5 @@
 		android:src="@drawable/icon"
 		android:layout_gravity="center_horizontal"/>
 
+	<!--  Software will add one more view here. It will be a streaming url or rss feed  -->
 </LinearLayout>

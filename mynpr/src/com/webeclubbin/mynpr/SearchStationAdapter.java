@@ -5,9 +5,11 @@ import java.util.Set;
 
 import android.app.Activity;
 import android.app.Dialog;
+import android.content.Context;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.net.Uri;
+import android.text.ClipboardManager;
 import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
@@ -18,6 +20,7 @@ import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 import android.widget.AdapterView.OnItemClickListener;
+import android.widget.AdapterView.OnItemLongClickListener;
 
 public class SearchStationAdapter extends ArrayAdapter<Station> {
 
@@ -173,14 +176,9 @@ public class SearchStationAdapter extends ArrayAdapter<Station> {
                         public void onItemClick(AdapterView parent, View v, int position, long id) {
                         	TextView t = (TextView)v;
                         	String title = t.getText().toString();
-                        	//Grab out url for podcast
+                        	//Grab out url of podcast
                         	String urladdr = purls.get( title) ;
                         	
-                        	/*ClipboardManager cm = (ClipboardManager) act.getSystemService(Context.CLIPBOARD_SERVICE);
-                        	cm.setText(url);
-                        	Toast.makeText(act, "Copied link to clipboard.", Toast.LENGTH_SHORT).show();
-                        	Toast.makeText(act, "Paste in your favorite RSS reader.", Toast.LENGTH_SHORT).show();*/
-                        	//onItemClickHelper(v, position, act, dialog , s.getName(), s.getLogo() );
                         	PlayURL pu = new PlayURL();
                         	pu.setLogo(s.getLogo());
                         	pu.setRSS(true);
@@ -190,6 +188,21 @@ public class SearchStationAdapter extends ArrayAdapter<Station> {
                         	SearchStationTab.launchhelper(pu, act, dialog );
                         }
                     });
+                	
+                	lv.setOnItemLongClickListener(new OnItemLongClickListener() {
+                		public boolean onItemLongClick(AdapterView<?> parent, View view, int position, long id){
+                			ClipboardManager cm = (ClipboardManager) act.getSystemService(Context.CLIPBOARD_SERVICE);
+                			TextView t = (TextView)view;
+                        	String title = t.getText().toString();
+                        	//Grab out url of podcast
+                        	String urladdr = purls.get( title) ;
+                        	cm.setText( urladdr );
+                        	Toast.makeText(act, "Copied link to clipboard.", Toast.LENGTH_SHORT).show();
+                        	Toast.makeText(act, "Paste in your favorite RSS reader.", Toast.LENGTH_SHORT).show();
+                        	//onItemClickHelper(v, position, act, dialog , s.getName(), s.getLogo() );
+                			return true;
+                		}
+                	});
                 
                 	Log.d(TAG, "Show Dialog" );
                 	dialog.show();

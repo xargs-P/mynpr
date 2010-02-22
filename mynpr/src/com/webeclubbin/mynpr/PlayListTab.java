@@ -1,19 +1,19 @@
 package com.webeclubbin.mynpr;
 
-import java.io.IOException;
 import java.util.Set;
 
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.app.Notification;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.ServiceConnection;
-import android.media.MediaPlayer;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
@@ -26,11 +26,13 @@ import android.view.View;
 import android.view.View.OnClickListener;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
+import android.widget.AdapterView;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
+import android.widget.AdapterView.OnItemLongClickListener;
 
 public class PlayListTab extends Activity implements Runnable, ServiceConnection {
 	private ListView lv = null;
@@ -42,6 +44,7 @@ public class PlayListTab extends Activity implements Runnable, ServiceConnection
 	final static public String LOGO = "LOGO";
 	final static public String URL = "URL";
 	final static public String REGULARSTREAM = "REGULARSTREAM";
+	final static public String DEL_REQUEST = "DEL_REQUEST";
 	//final static public String RSS = "RSS";
 	final static public String SPINNING = "SPINNING";
 	
@@ -68,6 +71,8 @@ public class PlayListTab extends Activity implements Runnable, ServiceConnection
 	private boolean playstatus = false;
 	
 	private final int MENU_CLEAN_ALL = 0; 
+	private final int MENU_HELP = 1; 
+	
 
 	public static final String MSG = "MESSAGE";
 	public static final int UPDATE = 0;
@@ -89,9 +94,12 @@ public class PlayListTab extends Activity implements Runnable, ServiceConnection
 	        	final String TAG = "BroadcastReceiver - onReceive";
 
 	        	String temps = intent.getStringExtra(STATION);
+	        	boolean isrss = intent.getBooleanExtra(PlayList.SPLITTERRSS, false);
 	          
+	        	String delrequest = intent.getStringExtra(DEL_REQUEST);
+	        	
 	    	    
-	        	if (temps != null) {
+	        	if (temps != null && delrequest == null) {
 	  	        	//Grab Image and/or Station Name from intent extra
 	  	        	Log.d(TAG, "STATION " + intent.getStringExtra(STATION));
 	  	        	Log.d(TAG, "LOGO " + intent.getStringExtra(LOGO));
@@ -101,7 +109,7 @@ public class PlayListTab extends Activity implements Runnable, ServiceConnection
 	  	        	
 	  	        	playlist.addStation(intent.getStringExtra(STATION), intent.getStringExtra(LOGO));
 
-	  	        	boolean isrss = intent.getBooleanExtra(PlayList.SPLITTERRSS, false);
+	  	        	
 	  	        	
 	  	        	if (isrss){
 	  	        		PlayURL pu = new PlayURL();
@@ -119,6 +127,7 @@ public class PlayListTab extends Activity implements Runnable, ServiceConnection
 		  	        updatescreen();
 		  	        if (! isrss) {
 		  	        	play( intent.getStringExtra(STATION) ,intent.getStringExtra(URL), false  );
+		  	        	
 		  	        } else {
 		  	        	//Allow user to select what podcast they want to listen to
 		  	        	Log.d(TAG,"Allow user to select what podcast they want to listen to");
@@ -126,6 +135,26 @@ public class PlayListTab extends Activity implements Runnable, ServiceConnection
 		  	        //TODO scroll text? Marquee?
 		  	        //Scroller s = new Scroller(context , new AnticipateOvershootInterpolator (0) );
 		  	        //content.setScroller(s);
+	        	} else if (delrequest != null) {
+	        		//We need to remove an item from the playlist.
+	        		String stationname = intent.getStringExtra(STATION);
+	        		String title = null;
+	        		if (isrss){
+	        			//Looks like an RSS feed we need to delete.
+	  	        		title = intent.getStringExtra( PlayList.SPLITTERRSSTITLE );
+	  	        		Log.d(TAG,"Remove RSS item: " + title );
+	  	        		//playlist.removeRSS(stationname, title);
+	        		} else {
+	        			//We can "assume" that is an regular audio stream
+	  	        		title = intent.getStringExtra( PlayListTab.URL );
+	  	        		Log.d(TAG,"Remove Stream item: " + title);
+	  	        		//playlist.removeStream(stationname, title);
+	  	        		
+	        		}
+	        		playlist.savetofile();
+	        		updatescreen();
+	        		
+	        		
 	        	} else {
 	        		Runnable r = new Runnable() {   
 	    	        	public void run() {
@@ -476,7 +505,7 @@ public class PlayListTab extends Activity implements Runnable, ServiceConnection
     
     private void updatescreen(){
 
-		String TAG = "updatescreen - Playlist";
+		final String TAG = "updatescreen - Playlist";
 
 		Log.d(TAG, "ENTER");
 
@@ -485,6 +514,7 @@ public class PlayListTab extends Activity implements Runnable, ServiceConnection
 			lv.setAdapter( new PlayListAdapter(maincontext,
 					com.webeclubbin.mynpr.R.layout.playlistrow, 
 					playlist, ih) );
+		
 		} else {
 			Log.d(TAG, "No stations to display");
 			lv.setAdapter( null );
@@ -551,6 +581,7 @@ public class PlayListTab extends Activity implements Runnable, ServiceConnection
     @Override
     public boolean onCreateOptionsMenu (Menu menu) {
     	menu.add(0, MENU_CLEAN_ALL, Menu.NONE, "Clear Playlist").setIcon(android.R.drawable.ic_menu_delete);;
+    	menu.add(0, MENU_HELP, Menu.NONE, "Help Info").setIcon(android.R.drawable.ic_menu_help);;
         return true;
     }
     
@@ -558,9 +589,12 @@ public class PlayListTab extends Activity implements Runnable, ServiceConnection
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         switch (item.getItemId()) {
-        case MENU_CLEAN_ALL:
-        	clearlist();
-            return true;
+        	case MENU_CLEAN_ALL:
+        		clearlist();
+        		return true;
+        	case MENU_HELP:
+        		//showHelp();
+        		return true;
         }
         return false;
     }
