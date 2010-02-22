@@ -65,6 +65,7 @@ public class SearchStationTab extends Activity implements Runnable {
 	private String searchstationurlwhole = "";
 	
 	final private int MENU_LIVE_NPR = 0;
+	final private int MENU_HELP = 1;
 	private final String NPRLIVEURL = "http://www.npr.org/streams/mp3/nprlive24.pls";
 	
 	final String STATIONLISTVIEW = "STATIONLISTVIEW";
@@ -664,6 +665,7 @@ public class SearchStationTab extends Activity implements Runnable {
     @Override
     public boolean onCreateOptionsMenu (Menu menu) {
     	menu.add(0, MENU_LIVE_NPR, Menu.NONE, "Launch NPR.org Live Stream").setIcon(com.webeclubbin.mynpr.R.drawable.npr2);;
+    	menu.add(0, MENU_HELP, Menu.NONE, "Help Info").setIcon(android.R.drawable.ic_menu_help);;
         return true;
     }
     

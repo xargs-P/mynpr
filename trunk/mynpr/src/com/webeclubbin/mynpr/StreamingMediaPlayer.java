@@ -626,7 +626,7 @@ public class StreamingMediaPlayer extends Service {
     	return processHasStarted ;
     }
     
-    //Send Message to Playlist
+    //Send Message to PlaylistTab
     private synchronized void sendMessage(int m){
     	String TAG = "sendMessage";
     	Intent i = new Intent(MyNPR.tPLAY);
