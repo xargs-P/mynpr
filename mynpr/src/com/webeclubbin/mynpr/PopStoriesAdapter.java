@@ -4,11 +4,11 @@ package com.webeclubbin.mynpr;
 
 import android.app.Activity;
 import android.graphics.Bitmap;
+import android.graphics.drawable.BitmapDrawable;
 import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
-import android.widget.ImageView;
 import android.widget.TextView;
 
 public class PopStoriesAdapter extends ArrayAdapter<String> {
@@ -49,22 +49,37 @@ public class PopStoriesAdapter extends ArrayAdapter<String> {
     public View getView(int position, View convertView, ViewGroup parent) {  
          
     	Log.d(TAG,"getView");
-        View row=View.inflate(context, ourlayoutview, null);  
-        TextView label=(TextView)row.findViewById(com.webeclubbin.mynpr.R.id.popstoryrowlabel);  
+    	ViewHolder holder;
+    	
+		if (convertView == null) {
+			convertView=View.inflate(context, ourlayoutview, null);  
+			
+			holder = new ViewHolder();
+			holder.label = (TextView)convertView.findViewById(com.webeclubbin.mynpr.R.id.popstoryrowlabel); 
 
-        label.setText(title[position]);  
+			convertView.setTag(holder);
+		} else {
+			Log.d(TAG, "Use old view object");
+			holder = (ViewHolder) convertView.getTag();
+		}
+    	
+        holder.label.setText(title[position]);  
         
-        ImageView icon = (ImageView)row.findViewById(com.webeclubbin.mynpr.R.id.thumbnail);
         if ( (image[position] != null) &&  ( ! image[position].equals(" ") ) && ( ! image[position].equals("") ) ) {  
             
             Log.d(TAG, "image " + Integer.toString(position) + " " + image[position] );
             Bitmap b = im.getImageBitmap( image[position] );
-            icon.setImageBitmap( b );
+            
+            holder.label.setCompoundDrawablesWithIntrinsicBounds(null, new BitmapDrawable (b), null, null);
         }  else {
-        	icon.setImageBitmap( null );
+        	holder.label.setCompoundDrawablesWithIntrinsicBounds(null, null, null, null);
         }
 
-        return(row); 
+        return(convertView); 
     }
 	
+	//Helper class to speed up getView()
+	static class ViewHolder {
+        TextView label;
+    }
 }
