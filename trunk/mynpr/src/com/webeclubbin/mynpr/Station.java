@@ -2,11 +2,7 @@ package com.webeclubbin.mynpr;
 
 import java.io.Serializable;
 import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Set;
 import java.util.Vector;
-
-import android.util.Log;
 
 //Radio Station Object
 public class Station implements Cloneable, Serializable {

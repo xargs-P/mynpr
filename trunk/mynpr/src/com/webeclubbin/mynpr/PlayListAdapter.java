@@ -29,12 +29,12 @@ import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.View.OnLongClickListener;
-import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.TextView;
+import android.widget.Toast;
 //Display playlist information
 public class PlayListAdapter extends ArrayAdapter<String> {
 
@@ -137,7 +137,6 @@ public class PlayListAdapter extends ArrayAdapter<String> {
         	}
         	
         } else {
-        	//row = new LinearLayout(context);
         	Log.d(TAG, "No urls to display");
         }
         	
@@ -292,12 +291,16 @@ public class PlayListAdapter extends ArrayAdapter<String> {
     
     private void processPodcastList(String rssurl, String station){
     	Log.d(TAG, "Parse rss url");
-        //TODO This may take too long. We may need to put in a "please wait" dialog
+        
         pods = grabPodcastXML(rssurl, station);
         Log.d(TAG, "Number of podcast(s): " + pods.length);
 
-    	Log.d(TAG, "Show Dialog" );
-    	handler.sendEmptyMessage(0);	
+        if (pods.length > 0){
+        	Log.d(TAG, "Show Dialog" );
+        	handler.sendEmptyMessage(0);
+        } else {
+        	Toast.makeText(context, "Could not download any podcast. Please try again.", Toast.LENGTH_LONG).show();
+        }
     }
     
     //Handle out of Main thread messages
