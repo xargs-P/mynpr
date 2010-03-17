@@ -1,5 +1,7 @@
 package com.webeclubbin.mynpr;
 
+import java.util.Set;
+
 import android.app.Activity;
 import android.content.Intent;
 import android.net.Uri;
@@ -8,6 +10,7 @@ import android.util.Log;
 import android.view.KeyEvent;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.webkit.WebBackForwardList;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
@@ -16,6 +19,8 @@ public class HTMLviewer extends Activity {
 
 	WebView webview;
 	final int MENU_SEND = 0;
+	final String URLADDRESS = "URLADDRESS";
+	final String HISTORY = "HISTORY";
 	
 	/** Called when the activity is first created. */
     @Override
@@ -24,12 +29,8 @@ public class HTMLviewer extends Activity {
         setContentView(R.layout.webview);
         String TAG = "onCreate - HTMLviewer";
         
-        Intent intent=getIntent();
-        Uri uri=intent.getData();
-        if ( uri == null ) {
-        	Log.e(TAG, "uri null");
-        }
-        Log.d(TAG, uri.toString());
+        Intent intent = null;
+        Uri uri = null;
         
         webview = (WebView) findViewById(R.id.webview);
         webview.setWebViewClient(new InternalWebViewClient());
@@ -37,8 +38,37 @@ public class HTMLviewer extends Activity {
         WebSettings settings = webview.getSettings();
        	settings.setJavaScriptEnabled(true);
 
-       	Log.d(TAG, "Load url");
-        webview.loadUrl(uri.toString());
+       	if (savedInstanceState == null){
+        	Log.d(TAG, "Bundle savedInstanceState is null.");
+        	intent=getIntent();
+            uri=intent.getData();
+            
+            if ( uri == null ) {
+            	Log.e(TAG, "uri null");
+            }
+            Log.d(TAG, uri.toString());
+            
+            Log.d(TAG, "Load url");
+            webview.loadUrl(uri.toString());
+            
+        } else {
+        	
+        	Log.d(TAG, "Bundle savedInstanceState is NOT null.");
+        	
+        	final Set<String> ourset = savedInstanceState.keySet();
+        	String[] s = {"temp"};
+        	final String[] ourstrings = ourset.toArray(s);
+        	final int bundlesize =  ourstrings.length;
+        	Log.d(TAG, "Bundle size: " + String.valueOf( bundlesize ) );
+        	
+        	for(int i=0; i< bundlesize ; i++){
+        		Log.d(TAG, "Bundle contents: " + ourstrings[i]);
+        	}
+        	Log.d(TAG, "Load up old webview");
+        	webview.restoreState(savedInstanceState);
+        }
+       	
+       	
     }
 
     //Set up client since npr.org will do a redirect for mobile devices
@@ -101,5 +131,18 @@ public class HTMLviewer extends Activity {
             return true;
         }
         return false;
+    }
+    
+	//Save UI state changes to the instanceState.
+    @Override
+    public void onSaveInstanceState(Bundle instanceState) {
+    	String TAG = "onSaveInstanceState - HTMLviewer";
+
+    	Log.d(TAG, "START");
+    	
+    	Log.d(TAG, "Save webview state");
+    	webview.saveState(instanceState);
+    	
+    	super.onSaveInstanceState(instanceState);
     }
 }
