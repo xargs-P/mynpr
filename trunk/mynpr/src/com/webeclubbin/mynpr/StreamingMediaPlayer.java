@@ -13,6 +13,7 @@ import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLConnection;
+import java.util.Enumeration;
 import java.util.Vector;
 
 import android.app.Service;
@@ -60,6 +61,8 @@ public class StreamingMediaPlayer extends Service {
     
     private Intent startingIntent = null;
     
+    private boolean stopping = false;
+    
     // listen for calls
 	// http://www.androidsoftwaredeveloper.com/2009/04/20/how-to-detect-call-state/ 
 	  final PhoneStateListener myPhoneListener = new PhoneStateListener() {
@@ -81,8 +84,6 @@ public class StreamingMediaPlayer extends Service {
 		  }
 	  };
     
-    //private int currentStatus = -1;
-
     //This object will allow other processes to interact with our service
     private final IStreamingMediaPlayer.Stub ourBinder = new IStreamingMediaPlayer.Stub(){
         String TAG = "IStreamingMediaPlayer.Stub";
@@ -132,7 +133,6 @@ public class StreamingMediaPlayer extends Service {
     	  
     	  String TAG = "StreamingMediaPlayer - onCreate";
     	  Log.d(TAG, "START");
-
     	  
     	  Log.d(TAG, "Setup Phone listener");
     	  TelephonyManager tm = (TelephonyManager)getSystemService(TELEPHONY_SERVICE);
@@ -175,7 +175,9 @@ public class StreamingMediaPlayer extends Service {
 				} 
     	    }   
     	};   
-    	new Thread(r).start(); 
+    	Thread t = new Thread(r);
+    	//t.setDaemon(true);
+    	t.start(); 
     	
     }
     
@@ -185,9 +187,6 @@ public class StreamingMediaPlayer extends Service {
 
     	  String TAG = "StreamingMediaPlayer - onDestroy";
     	  Log.d(TAG, "START");
-    	  
-    	  // stop the service here
-
     }
     
     @Override
@@ -217,8 +216,6 @@ public class StreamingMediaPlayer extends Service {
 		sendMessage( PlayListTab.RAISEPRIORITY );
         
         sendMessage( PlayListTab.START );
-        
-        
 
     	try {
     		url = new URL(mediaUrl);
@@ -256,9 +253,8 @@ public class StreamingMediaPlayer extends Service {
     		return;
     	} 
     	
-    	
-
 	    if (regularStream){
+	    	Log.d(TAG, "Setup regular stream");
         	//Lets Start Streaming normally
 	    	Runnable r = new Runnable() {   
     	        public void run() {   
@@ -272,8 +268,11 @@ public class StreamingMediaPlayer extends Service {
     	            }   
     	        }   
     	    };   
-    	    new Thread(r).start(); 
+    	    Thread t = new Thread(r);
+        	//t.setDaemon(true);
+        	t.start(); 
         } else {
+        	Log.d(TAG, "Setup incremental stream");
         	//Lets Start Streaming by downloading parts of the stream and playing it in pieces
         	//Set up buffer size
         	//Assume XX kbps * XX seconds / 8 bits per byte
@@ -291,7 +290,9 @@ public class StreamingMediaPlayer extends Service {
     	            }   
     	        }   
     	    };   
-    	    new Thread(r).start(); 
+    	    Thread t = new Thread(r);
+        	//t.setDaemon(true);
+        	t.start(); 
         }
     }
     
@@ -315,7 +316,11 @@ public class StreamingMediaPlayer extends Service {
 		BufferedOutputStream bout = new BufferedOutputStream ( new FileOutputStream(downloadingMediaFile), 32 * 1024 );   
         byte buf[] = new byte[16 * 1024];
         int totalBytesRead = 0, incrementalBytesRead = 0, numread = 0;
-        
+
+        if (stopping == true){
+        	stream = null;
+        	Log.d(TAG, "null out stream ");
+        }
         do {
         	if (bout == null) {
         		counter++;
@@ -326,6 +331,7 @@ public class StreamingMediaPlayer extends Service {
         	}
 
         	try {
+        		//Log.v(TAG, "read stream");
         		numread = stream.read(buf);
         	} catch (IOException e){
         		Log.e(TAG, e.toString());
@@ -387,7 +393,7 @@ public class StreamingMediaPlayer extends Service {
 	        			}
 	        		}
 	        	};
-	        	MediaPlayer.OnCompletionListener listener = new MediaPlayer.OnCompletionListener () {
+	        	MediaPlayer.OnCompletionListener onComplete = new MediaPlayer.OnCompletionListener () {
         			public void onCompletion(MediaPlayer mp){
         				String TAG = "MediaPlayer.OnCompletionListener - Normal Streaming";
         				Log.d(TAG, "Audio is done");
@@ -398,11 +404,18 @@ public class StreamingMediaPlayer extends Service {
         		
 	            try {
 	            	m.setOnBufferingUpdateListener(onBuff);
+	            	m.setOnCompletionListener(onComplete);
 	            	m.setDataSource(mediaUrl);
 	            	Log.d(TAG, "prepare audio");
+	            	
 	            	m.prepare();
 	            	m.start();
 	            	mediaplayers.add(m);
+	            	if ( stopping){
+	            		Log.d(TAG,"Stopping: lets get out of here");
+	            		m.stop();
+	            		
+	            	}  
 	            } catch (IllegalArgumentException e) {
 	            	Log.e(TAG, "Unable to initialize the MediaPlayer for Audio Url = " + mediaUrl, e);
 	            	sendMessage( PlayListTab.TROUBLEWITHAUDIO);
@@ -414,8 +427,9 @@ public class StreamingMediaPlayer extends Service {
 	            }
 	        }   
 	    };  
-	    new Thread(r).start();
-    	
+	    Thread t = new Thread(r);
+    	//t.setDaemon(true);
+    	t.start(); 
     }  
 
     
@@ -449,6 +463,7 @@ public class StreamingMediaPlayer extends Service {
     			        				sendMessage( PlayListTab.SPIN ) ;
     			        				//Thread.currentThread().sleep(1000 * 15);
     			        				Thread.sleep(1000 * 15);
+    			        				//TODO do watch time of day
     			        				
     			        				
     			        				sendMessage( PlayListTab.STOPSPIN );
@@ -486,6 +501,8 @@ public class StreamingMediaPlayer extends Service {
 	        		mp.setOnCompletionListener(listener);
 	        		Log.d(TAG, "Prepare Media Player " + f);
 	        		
+	        		mediaplayers.add(mp);
+	        		
 	        		if ( ! started  ){
 	        			mp.prepare();
 	        		} else {
@@ -493,7 +510,6 @@ public class StreamingMediaPlayer extends Service {
 	        			mp.prepareAsync();
 	        		}
 	        		
-	        		mediaplayers.add(mp);
 	        		if ( ! started  ){
 		        		Log.d(TAG, "Start Media Player " + f);
 		        		startMediaPlayer();
@@ -511,6 +527,7 @@ public class StreamingMediaPlayer extends Service {
  	        }
 	    };
 	    Thread ourthread = new Thread(r);
+	    //ourthread.setDaemon(true);
 	    ourthread.start();
 	    
 	    // Wait indefinitely for the thread to finish
@@ -548,7 +565,6 @@ public class StreamingMediaPlayer extends Service {
     	mp.start(); 
     	
     	sendMessage(PlayListTab.STOPSPIN);
-    		
     }
     
     //Stop Audio
@@ -556,10 +572,11 @@ public class StreamingMediaPlayer extends Service {
     	String TAG = "STOP";
     	Log.d(TAG,"Entry");
     	
+    	stopping = true;
     	if (regularStream == true){
     		sendMessage(PlayListTab.RESETPLAYSTATUS);
     	} 
-    	regularStream = false;
+    	//regularStream = false;
     	
     	try {
     		
@@ -573,8 +590,9 @@ public class StreamingMediaPlayer extends Service {
         	    	        	mp.stop();  
         	    	        }   
         	    	    };   
-        	    	    new Thread(r).start(); 
-        				
+        	    	    Thread t = new Thread(r);
+        	        	//t.setDaemon(true);
+        	        	t.start(); 
         			}
         		}
     		}
@@ -585,11 +603,7 @@ public class StreamingMediaPlayer extends Service {
     		}
     		stream = null;
     		
-    		//if (tellPlayList) {
-    		//	sendMessage(PlayListTab.STOP);
-    		//}
-    		//sendMessage(PlayListTab.RESETPLAYSTATUS);
-    		
+
     		//Take off listener
     		Log.d(TAG, "Remove Phone listener");
       	  	TelephonyManager tm = (TelephonyManager)getSystemService(TELEPHONY_SERVICE);
@@ -610,19 +624,6 @@ public class StreamingMediaPlayer extends Service {
     public boolean isPlaying() {
     	String TAG = "isPlaying";
     	Log.d(TAG, " = "  + processHasStarted);
-    	/*boolean result = false;
-    	try {
-    		MediaPlayer mp = mediaplayers.get(0);
-    		if (mp.isPlaying()){
-    			result = true;
-    		} else {
-    			result = false;
-    		}
-    	} catch (ArrayIndexOutOfBoundsException e) {
-    		Log.e(TAG, "No items in Media player List");
-    	}
-    	
-    	return result; */
     	return processHasStarted ;
     }
     
@@ -635,14 +636,6 @@ public class StreamingMediaPlayer extends Service {
     	Log.d(TAG, "Broadcast Message intent");
     	context.sendBroadcast (i) ;
     }
-    
-    /*private void checkThreadPriority(){
-    	String TAG = "checkThreadPriority";
-    	Log.d(TAG, "Start" );
-    	//Process.setThreadPriority(Process.THREAD_PRIORITY_AUDIO); 
-    	Log.v(TAG, "Process priority: " + Process.getThreadPriority(Process.myTid()));
-    	//Process.THREAD_PRIORITY_FOREGROUND
-    } */
     
     private void raiseThreadPriority(){
     	String TAG = "raiseThreadPriority";

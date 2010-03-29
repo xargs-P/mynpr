@@ -115,14 +115,14 @@ public class SearchStationAdapter extends ArrayAdapter<Station> {
         });
         mp3.setOnClickListener(new View.OnClickListener() {
             public void onClick( View v ) {
-                final String TAG = "MP3 Click: " + s.getName() ;
+                final String TAG = "Live Stream Click: " + s.getName() ;
                 
                 // If URL. list is 0 skip function
                 if (murls.length != 0) {
                 	final Dialog dialog = new Dialog(act);
 
                 	dialog.setContentView(com.webeclubbin.mynpr.R.layout.urlpopup);
-                	dialog.setTitle("Select MP3 Link");
+                	dialog.setTitle("Select Live MP3 Stream Link");
 
                 	//Set up Logo
                 	ImageView image = (ImageView) dialog.findViewById(com.webeclubbin.mynpr.R.id.slogo);
@@ -142,7 +142,7 @@ public class SearchStationAdapter extends ArrayAdapter<Station> {
                         }
                     });
                 
-                	Log.d(TAG, "Show Dialog" );
+                	Log.d(TAG, "Show Dialog" ); 
                 	dialog.show();
                 }
             }
@@ -158,7 +158,7 @@ public class SearchStationAdapter extends ArrayAdapter<Station> {
                 	final Dialog dialog = new Dialog(act);
 
                 	dialog.setContentView(com.webeclubbin.mynpr.R.layout.urlpopup);
-                	dialog.setTitle("Copy Podcast Link");
+                	dialog.setTitle("Select Podcast Show");
 
                 	//Set up Logo
                 	ImageView image = (ImageView) dialog.findViewById(com.webeclubbin.mynpr.R.id.slogo);
@@ -166,14 +166,16 @@ public class SearchStationAdapter extends ArrayAdapter<Station> {
                 
                 	//Set up URL list
                 	ListView lv = (ListView) dialog.findViewById(com.webeclubbin.mynpr.R.id.urllist);
-                	Log.d(TAG, "String array: " + String.valueOf(  u.size()) + u.toArray(t)[0]);
+                	Log.d(TAG, "String array: " + String.valueOf(  u.size()) + " " + u.toArray(t)[0]);
                 
                 	lv.setAdapter(new ArrayAdapter<String>(act,
                 		com.webeclubbin.mynpr.R.layout.urllist ,
                 		u.toArray(t)));
-                	
+
                 	lv.setOnItemClickListener(new OnItemClickListener() {
-                        public void onItemClick(AdapterView parent, View v, int position, long id) {
+                        public void onItemClick(AdapterView<?> parent, View v, int position, long id) {
+                        	final String TAG = "onItemClick";
+                			Log.d(TAG, "Podcast regular click" );
                         	TextView t = (TextView)v;
                         	String title = t.getText().toString();
                         	//Grab out url of podcast
@@ -185,12 +187,16 @@ public class SearchStationAdapter extends ArrayAdapter<Station> {
                         	pu.setStation(s.getName());
                         	pu.setTitle(title);
                         	pu.setURL(urladdr);
-                        	SearchStationTab.launchhelper(pu, act, dialog );
+                        	SearchStationTab.launchhelper(pu, act, dialog ); 
                         }
-                    });
+                    }); 
+
                 	
+                	/*
                 	lv.setOnItemLongClickListener(new OnItemLongClickListener() {
                 		public boolean onItemLongClick(AdapterView<?> parent, View view, int position, long id){
+                			final String TAG = "onItemLongClick";
+                			Log.d(TAG, "Podcast longclick" );
                 			ClipboardManager cm = (ClipboardManager) act.getSystemService(Context.CLIPBOARD_SERVICE);
                 			TextView t = (TextView)view;
                         	String title = t.getText().toString();
@@ -203,7 +209,7 @@ public class SearchStationAdapter extends ArrayAdapter<Station> {
                 			return true;
                 		}
                 	});
-                
+                */
                 	Log.d(TAG, "Show Dialog" );
                 	dialog.show();
                 }

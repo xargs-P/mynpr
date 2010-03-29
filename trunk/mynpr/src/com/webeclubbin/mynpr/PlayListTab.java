@@ -3,12 +3,14 @@ package com.webeclubbin.mynpr;
 import java.util.Set;
 
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.app.Notification;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.ServiceConnection;
@@ -52,7 +54,7 @@ public class PlayListTab extends Activity implements Runnable, ServiceConnection
 	private PlayList playlist = new PlayList(this);
 	private Activity maincontext = null;
 	
-	private boolean updatescreen = true;
+	//private boolean updatescreen = true;
 	private boolean doNotStart = false;
 	private ImageHelper ih = null;
 
@@ -81,6 +83,7 @@ public class PlayListTab extends Activity implements Runnable, ServiceConnection
 	public static final int CHECKRIORITY = 7;
 	public static final int LOWERPRIORITY = 8;
 	public static final int RESETPLAYSTATUS = 9;
+	public static final int TROUBLEWITHRSSFEED = 10;
 	
 	private IStreamingMediaPlayer.Stub streamerBinder = null;
 	
@@ -139,12 +142,12 @@ public class PlayListTab extends Activity implements Runnable, ServiceConnection
 	        			//Looks like an RSS feed we need to delete.
 	  	        		title = intent.getStringExtra( PlayList.SPLITTERRSSTITLE );
 	  	        		Log.d(TAG,"Remove RSS item: " + title );
-	  	        		//playlist.removeRSS(stationname, title);
+	  	        		playlist.removeRSS(stationname, title);
 	        		} else {
 	        			//We can "assume" that is an regular audio stream
 	  	        		title = intent.getStringExtra( PlayListTab.URL );
 	  	        		Log.d(TAG,"Remove Stream item: " + title);
-	  	        		//playlist.removeStream(stationname, title);
+	  	        		playlist.removeStream(stationname, title);
 	  	        		
 	        		}
 	        		playlist.savetofile();
@@ -325,6 +328,7 @@ public class PlayListTab extends Activity implements Runnable, ServiceConnection
         	
         	currentStation = savedInstanceState.getString(STATION);
     		currentURL = savedInstanceState.getString(URL);
+    		currentRegularStream = savedInstanceState.getBoolean(REGULARSTREAM);
     		if ( ! currentStation.equals("")){
     			TextView stationTV = (TextView) findViewById(com.webeclubbin.mynpr.R.id.playingstation);
     			stationTV.setText( currentStation + ": ");
@@ -387,6 +391,11 @@ public class PlayListTab extends Activity implements Runnable, ServiceConnection
         		Toast.makeText(maincontext, "Could not connect with Audio Stream" , Toast.LENGTH_LONG).show();
         		
         		stopplayer() ;
+        	} else if (msg.what == PlayListTab.TROUBLEWITHRSSFEED){
+            		//Trouble getting RSS Feed
+            		Log.d(TAG, "Send screen message rss feed");
+            		Toast.makeText(maincontext, "Could not download podcast list. Please try again." , Toast.LENGTH_LONG).show();
+            		
         	} else if (msg.what == PlayListTab.RAISEPRIORITY){
         		Log.d(TAG, "Raise priority level for main process");
         		MyNPR parent = (MyNPR) maincontext.getParent();
@@ -402,6 +411,8 @@ public class PlayListTab extends Activity implements Runnable, ServiceConnection
         	} else if (msg.what == PlayListTab.RESETPLAYSTATUS){
         		Log.d(TAG, "Reset play status to not playing.");
         		setplaystatus( false );
+        		Log.d(TAG, "Turn off notify");
+            	turnOffNotify();
         		
         	}
         }
@@ -514,6 +525,14 @@ public class PlayListTab extends Activity implements Runnable, ServiceConnection
 		} else {
 			Log.d(TAG, "No stations to display");
 			lv.setAdapter( null );
+			currentStation = "";
+    		currentURL = "";
+    		currentRegularStream = false;
+    	 
+    		TextView stationTV = (TextView) findViewById(com.webeclubbin.mynpr.R.id.playingstation);
+    		stationTV.setText( "");
+    		TextView contentTV = (TextView) findViewById(com.webeclubbin.mynpr.R.id.playingcontent);
+        	contentTV.setText( ""  );
 		} 
 		
 
@@ -558,6 +577,7 @@ public class PlayListTab extends Activity implements Runnable, ServiceConnection
         Log.d(TAG, "Saving TextViews");
         instanceState.putString(STATION, currentStation );
         instanceState.putString(URL, currentURL );
+        instanceState.putBoolean(REGULARSTREAM, currentRegularStream);
         
         if (spinner != null){
         	Log.d(TAG, "Save whether spinner is moving");
@@ -589,10 +609,27 @@ public class PlayListTab extends Activity implements Runnable, ServiceConnection
         		clearlist();
         		return true;
         	case MENU_HELP:
-        		//showHelp();
+        		showHelp();
         		return true;
         }
         return false;
+    }
+    
+    //Show Help Message
+    private void showHelp() {
+    	//final String TAG = "showHelp";
+    	AlertDialog.Builder builder = new AlertDialog.Builder(this);
+		
+		builder.setMessage("Select Radio Station Live Streams or Podcast.\n" + "Long press an item to delete.\n" + "Or just press the 'Clear Playlist' Button" )
+		       .setCancelable(true)
+		       .setPositiveButton("Okay", new DialogInterface.OnClickListener() {
+		           public void onClick(DialogInterface dialog, int id) {
+		        	   dialog.dismiss();
+		           }
+		       });
+		        
+		AlertDialog alert = builder.create();
+		alert.show();
     }
     
     //Clear playlist

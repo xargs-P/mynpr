@@ -64,24 +64,11 @@ public class PodcastAdapter extends ArrayAdapter<Podcast> {
         if (checkPlayedStatus(pod)){
         	//we have played this file before, set different status
         	Log.d(TAG, "set played status to true");
-        	holder.title.setCompoundDrawablesWithIntrinsicBounds (  com.webeclubbin.mynpr.R.drawable.processing2  , 0,0,0);
+        	holder.title.setCompoundDrawablesWithIntrinsicBounds (  com.webeclubbin.mynpr.R.drawable.processing2 , 0,0,0);
+        } else {
+        	Log.d(TAG, "set played status to false");
+        	holder.title.setCompoundDrawablesWithIntrinsicBounds (  com.webeclubbin.mynpr.R.drawable.processing2light , 0,0,0);
         }
-        
-        holder.title.setOnClickListener(new View.OnClickListener() {
-            public void onClick( View v ) {
-                String TAG = "Podcast title Click: " ;
-                //TextView clickedTitle = (TextView) v;
-                //String textOfTitle = (String) clickedTitle.getText();
-                Log.d(TAG, pod.getTitle());
-                PlayListTab parent = (PlayListTab) parentContext;
-                parent.play(pod.getStation(), pod.getAudioUrl(), true);
-                dialog.cancel();
-                
-                //Setup status file for podcast
-                setPlayedStatus(pod);
-                
-            }
-        });
 
         return(convertView); 
     }
@@ -92,11 +79,11 @@ public class PodcastAdapter extends ArrayAdapter<Podcast> {
     }
 	
 	//setup podcast status file
-	private void setPlayedStatus(Podcast p){
+	public static void setPlayedStatus(Podcast p, Context c){
 		final String PREFIX = "PODCAST";
 		final String TAG = "setPlayedStatus";
 		
-		File f = parentContext.getDir("pods", Context.MODE_PRIVATE);
+		File f = c.getDir("pods", Context.MODE_PRIVATE);
 		String podcastStatusFile =  f.getPath() + File.separator + PREFIX + String.valueOf( p.getAudioUrl().hashCode() ) + String.valueOf( p.getPubDate().hashCode() );
 		Log.d(TAG, "Saving temp file: " + podcastStatusFile);
 		File podstatus = new File (podcastStatusFile);
@@ -108,7 +95,7 @@ public class PodcastAdapter extends ArrayAdapter<Podcast> {
 				Log.e(TAG, "Problem saving temp file: " + podcastStatusFile);
 				Log.e(TAG, e.toString() );
 			}
-		}
+		} 
 	}
 	//Check podcast status file
 	private boolean checkPlayedStatus(Podcast p){
@@ -117,20 +104,27 @@ public class PodcastAdapter extends ArrayAdapter<Podcast> {
 		boolean status = false;
 		
 		File f = parentContext.getDir("pods", Context.MODE_PRIVATE);
-		String podcastStatusFile =  f.getPath() + File.separator + PREFIX + String.valueOf( p.getAudioUrl().hashCode() ) + String.valueOf( p.getPubDate().hashCode() );
 		
-		File podstatus = new File (podcastStatusFile);
+		Log.d(TAG, "url " + p.getAudioUrl() + " pubdate " + p.getPubDate());
+
+		if (p != null){
+			String podcastStatusFile =  f.getPath() + File.separator + PREFIX + String.valueOf( p.getAudioUrl().hashCode() ) + String.valueOf( p.getPubDate().hashCode() );
+			Log.d(TAG, " pod status file: " + podcastStatusFile);
+			File podstatus = new File (podcastStatusFile);
 		
-		if ( podstatus.exists() ){
-			status = true;
-		} 
+			if ( podstatus.exists() ){
+				status = true;
+			} 
+		} else {
+			status = false;	
+		}
+		Log.d(TAG, String.valueOf( status ));
 		return status;
 	}
 	
 	//Setup Click listeners and dialogs if we need to.
 	public void onItemClickHelper(View v, int position, Activity a, final Dialog d, String stationname, String logo) {
-        Uri uri = null;
-        Intent i = null;
+
         String TAG = "SearchStationApdapter - onItemClickHelper";
         
         //Open Selected media URL

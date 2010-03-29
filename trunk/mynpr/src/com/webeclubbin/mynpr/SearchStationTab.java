@@ -27,8 +27,10 @@ import javax.xml.parsers.SAXParserFactory;
 import org.xml.sax.SAXException;
 
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.app.Dialog;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
@@ -170,7 +172,7 @@ public class SearchStationTab extends Activity implements Runnable {
         			Log.d(TAG, "Text Search box - Enter Pressed: Run search");
         			// close soft keyboard 
         			InputMethodManager inputManager = (InputMethodManager) maincontext.getSystemService(Context.INPUT_METHOD_SERVICE); 
-        			inputManager.hideSoftInputFromWindow( v.getWindowToken(), InputMethodManager.HIDE_IMPLICIT_ONLY); 
+        			inputManager.hideSoftInputFromWindow( v.getWindowToken(), 0);
         			
         			button_search.performClick();
         			return true;
@@ -677,7 +679,28 @@ public class SearchStationTab extends Activity implements Runnable {
         	String [] list = SearchStationTab.parsePLS(NPRLIVEURL, maincontext);
         	SearchStationTab.launchhelper(list, maincontext, null, "NPR.org", "http://media.npr.org/chrome/nprlogo_24.gif");
             return true;
-        }
+
+        case MENU_HELP:
+        	showHelp();
+        	return true;
+    	}
         return false;
+    }
+    
+    //Show Help Message
+    private void showHelp() {
+    	//final String TAG = "showHelp";
+    	AlertDialog.Builder builder = new AlertDialog.Builder(this);
+		
+		builder.setMessage("Select 'Links' for Station webpages.\n" + "'Live' for Station Live streams.\n" + "Or 'Podcast' for station programs." )
+		       .setCancelable(true)
+		       .setPositiveButton("Okay", new DialogInterface.OnClickListener() {
+		           public void onClick(DialogInterface dialog, int id) {
+		        	   dialog.dismiss();
+		           }
+		       });
+		        
+		AlertDialog alert = builder.create();
+		alert.show();
     }
 }

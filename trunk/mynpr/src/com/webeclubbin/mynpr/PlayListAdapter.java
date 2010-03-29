@@ -29,12 +29,13 @@ import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.View.OnLongClickListener;
+import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.TextView;
-import android.widget.Toast;
+import android.widget.AdapterView.OnItemClickListener;
 //Display playlist information
 public class PlayListAdapter extends ArrayAdapter<String> {
 
@@ -204,7 +205,7 @@ public class PlayListAdapter extends ArrayAdapter<String> {
                 			           public void onClick(DialogInterface dialog, int id) {
                 			        	   Log.d(TAG, "Delete: " + t.getText());
                 			        	   //Delete item from playlist
-                			        	   sendMessage(stations[position], (String)t.getText(),  PlayList.SPLITTERRSSTITLE);
+                			        	   sendMessage(stations[position], (String)t.getText(),  PlayList.SPLITTERRSS);
                 			           }
                 			       })
                 			       .setNegativeButton("No", new DialogInterface.OnClickListener() {
@@ -299,7 +300,14 @@ public class PlayListAdapter extends ArrayAdapter<String> {
         	Log.d(TAG, "Show Dialog" );
         	handler.sendEmptyMessage(0);
         } else {
-        	Toast.makeText(context, "Could not download any podcast. Please try again.", Toast.LENGTH_LONG).show();
+        	Log.d(TAG, "trouble with feed. send message" );
+        	Intent i = new Intent(MyNPR.tPLAY);
+
+        	i.putExtra(PlayListTab.MSG, PlayListTab.TROUBLEWITHRSSFEED);
+        	Log.d(TAG, "Broadcast Message intent");
+        	context.sendBroadcast (i) ;
+        	waitdialog.dismiss();
+
         }
     }
     
@@ -318,6 +326,20 @@ public class PlayListAdapter extends ArrayAdapter<String> {
         	   	lv.setAdapter(new PodcastAdapter(context,
         	    		com.webeclubbin.mynpr.R.layout.podcast ,
         	            pods, dialog));
+        	   	lv.setOnItemClickListener(new OnItemClickListener() {
+                    public void onItemClick(AdapterView<?> parent, View v, int position, long id) {
+                    	final String TAG = "Podcast title Click: " ;        
+                    	
+                    	Podcast pod = pods[position];
+                        Log.d(TAG, pod.getTitle());
+                        PlayListTab parentcontext = (PlayListTab) context;
+                        parentcontext.play(pod.getStation(), pod.getAudioUrl(), true);
+                        dialog.cancel();
+                        
+                        //Setup status file for podcast
+                        PodcastAdapter.setPlayedStatus(pod, context);
+                    }
+                }); 
         	    	
         	   	Log.d(TAG, "Show dialog");
         	   	dialog.show();
@@ -333,8 +355,8 @@ public class PlayListAdapter extends ArrayAdapter<String> {
     	Intent i = new Intent(MyNPR.tPLAY);
 
     	i.putExtra(PlayListTab.STATION, station);
-    	if (type == PlayList.SPLITTERRSSTITLE){
-    		i.putExtra(PlayList.SPLITTERRSSTITLE, true);
+    	if (type == PlayList.SPLITTERRSS){
+    		i.putExtra(PlayList.SPLITTERRSS, true);
     		i.putExtra(PlayList.SPLITTERRSSTITLE, title);
     	} else if (type == PlayListTab.URL){
     		i.putExtra(PlayListTab.URL, title);
