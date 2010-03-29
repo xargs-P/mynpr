@@ -4,6 +4,7 @@ import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -23,10 +24,10 @@ import android.util.Log;
 //Holds the playlist information
 public class PlayList  {
 
-	private HashMap<String, Vector<String> > plist = new HashMap<String, Vector<String> >();
-	private HashMap<String, String> logos = new HashMap<String, String>();
-	//setup for podcasts variable: <Station Name, <Title, url>>
+	private HashMap<String, Vector<String> > streams = new HashMap<String, Vector<String> >();
+	private HashMap<String, String> stations = new HashMap<String, String>();
 	private HashMap<String, HashMap<String, String>> podcasts = new HashMap<String, HashMap<String, String>>();
+	
 	private String TAG = "PlayList";
 	private final String playlistfile = "playlist";
 	private static final String SPLITTERAUDIO = "<MYNPR>";
@@ -45,10 +46,10 @@ public class PlayList  {
 	public void addUrl(String station, String url){
 		Log.d(TAG, "addUrl: " + station);
 		
-		if ( plist.containsKey(station) ) {
+		if ( streams.containsKey(station) ) {
 		
 			Log.d(TAG, "add url, station already here");
-			Vector<String> v = (Vector<String>) plist.get(station);
+			Vector<String> v = (Vector<String>) streams.get(station);
 			
 			Log.d(TAG, "urls : " + v.size());
 			String[] t = {""} ;
@@ -61,13 +62,13 @@ public class PlayList  {
 			}
 			if (alreadyHere == false){
 				v.add(url);
-				plist.put(station, v);
+				streams.put(station, v);
 			}
 		} else {
 			Log.d(TAG, "add station and url");
 			Vector<String> v = new Vector<String>(); 
 			v.add(url);
-			plist.put(station, v);
+			streams.put(station, v);
 		}
 
 		saved = false;
@@ -102,7 +103,14 @@ public class PlayList  {
 	//Add station to logo
 	public void addStation(String station, String logo){
 		Log.d(TAG, "AddStation: " + station);
-		logos.put(station,logo);
+		stations.put(station,logo);
+		saved = false;
+	}
+	
+	//Add station to logo
+	public void removeStation(String station){
+		Log.d(TAG, "Remove Station: " + station);
+		stations.remove(station);
 		saved = false;
 	}
 	
@@ -110,7 +118,7 @@ public class PlayList  {
 	public String[] getStations(){
 		Log.d(TAG, "getStations");
 		//Set<String> s = plist.keySet();
-		Set<String> s = logos.keySet();
+		Set<String> s = stations.keySet();
 		String[] t = {""} ;
 		Log.d(TAG, "Number of Stations: " + s.toArray(t).length);
 		if (s.toArray(t).length == 1){
@@ -126,7 +134,7 @@ public class PlayList  {
 	//Get Logos
 	public String[] getLogos(){
 		Log.d(TAG, "getLogos");
-		Collection<String> v = logos.values();
+		Collection<String> v = stations.values();
 		String[] t = {""} ;
 		return v.toArray(t);
 	}
@@ -134,13 +142,13 @@ public class PlayList  {
 	//Get Logo
 	public String getLogo(String station){
 		Log.d(TAG, "getLogo");
-		return logos.get(station);
+		return stations.get(station);
 	}
 	
 	//Grab audio urls
 	public String[] getUrls(String station){
 		Log.d(TAG, "get urls for station: " + station);
-		Vector<String> urls = (Vector<String>) plist.get(station);
+		Vector<String> urls = (Vector<String>) streams.get(station);
 		if (urls != null){
 			Log.d(TAG, "urls : " + urls.size());
 			String[] t = {""} ;
@@ -209,52 +217,63 @@ public class PlayList  {
     			Log.e(TAG, "No playlist file to open");
     			return false;
     		}
+    		
     		DataOutputStream out = new DataOutputStream(fos);
             BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(out));
             
             Log.d(TAG,"loop through file");
             String [] s = getStations();
             //Save File Line By Line
-            for (int i = 0; i <  s.length; i++)   {
-            	String strLine = s[i] + SPLITTERSTATION + logos.get(s[i]);
-            	bw.write(strLine);
-            	bw.newLine();
-            	
-            	String [] a = getUrls(s[i]);
-            	int len = 0;
-            	if (a != null){
-            		len = a.length;
-            	}
-            	//Process audio urls
-            	for (int y = 0; y <  len; y++) {
-
-            		strLine = s[i] + SPLITTERAUDIO + a[y];
-            		
-            		bw.write(strLine);
-            		bw.newLine();
-            	}
-            	//Process rss urls
-            	HashMap <String, String> rss = getRSSUrls(s[i]);
-            	Set<String> rset = null;
-            	if (rss != null){
-            		rset = rss.keySet();
-            	}
-            	 
-                if (rset != null){
-                	Iterator<String> riterator = rset.iterator();
-                	while (riterator.hasNext()) { 
-                		String title = riterator.next();
-                		String rssurl = rss.get(title);
-                		strLine = s[i] + SPLITTERRSS + title + SPLITTERRSS + rssurl;
-                    	bw.write(strLine);
-                    	bw.newLine();
+            if (s != null){
+            	for (int i = 0; i <  s.length; i++)   {
+                	String strLine = s[i] + SPLITTERSTATION + stations.get(s[i]);
+                	bw.write(strLine);
+                	bw.newLine();
+                	
+                	String [] a = getUrls(s[i]);
+                	int len = 0;
+                	if (a != null){
+                		len = a.length;
                 	}
-                }
+                	//Process audio urls
+                	for (int y = 0; y <  len; y++) {
 
+                		strLine = s[i] + SPLITTERAUDIO + a[y];
+                		
+                		bw.write(strLine);
+                		bw.newLine();
+                	}
+                	//Process rss urls
+                	HashMap <String, String> rss = getRSSUrls(s[i]);
+                	Set<String> rset = null;
+                	if (rss != null){
+                		rset = rss.keySet();
+                	}
+                	 
+                    if (rset != null){
+                    	Iterator<String> riterator = rset.iterator();
+                    	while (riterator.hasNext()) { 
+                    		String title = riterator.next();
+                    		String rssurl = rss.get(title);
+                    		strLine = s[i] + SPLITTERRSS + title + SPLITTERRSS + rssurl;
+                        	bw.write(strLine);
+                        	bw.newLine();
+                    	}
+                    }
+
+                }
+                bw.close();
+                out.close();
+                fos.close();
+            } else {
+            	//Just delete file if it is there
+            	Log.d(TAG, "Just delete playlist file since there is nothing in playlist");
+            	File f = new File(playlistfile);
+            	if (f.exists()){
+            		f.delete();
+            	}
             }
-            bw.close();
-            out.close();
-            fos.close();
+            
     		
     	} catch (IOException ioe) {
     		Log.e(TAG, "Problem writing to file " + ioe.getMessage() );
@@ -272,8 +291,10 @@ public class PlayList  {
     	
     	//Reset variables
     	Log.d(TAG, "Reset variables");
-    	plist = new HashMap<String, Vector<String> >();
-    	logos = new HashMap<String, String>();
+    	streams = new HashMap<String, Vector<String> >();
+    	stations = new HashMap<String, String>();
+    	podcasts = new HashMap<String, HashMap<String, String>>();
+    	
     	
     	saved = true;
 	}
@@ -292,7 +313,7 @@ public class PlayList  {
         //Grab data out
         for (int i = 0; i <  s.length; i++)   {
         	Log.d(TAG, s[i]);
-        	lineofdata.add(  s[i] + SPLITTERSTATION + logos.get(s[i]) );
+        	lineofdata.add(  s[i] + SPLITTERSTATION + stations.get(s[i]) );
         	
         	String [] a = getUrls(s[i]);
         	int len = 0;
@@ -348,4 +369,60 @@ public class PlayList  {
 		saved = false;
 	}
 	
+	//Remove RSS Podcast Show from Playlist
+	public void removeRSS(String stationname, String title){
+		Log.d(TAG, "removeRSS: " + title);
+		
+		Log.d(TAG, "Grab station: " + stationname);
+		HashMap<String, String> v = (HashMap<String, String>) podcasts.get( stationname );
+		Log.d(TAG, "Current number of titles: " + v.size());
+		Log.d(TAG, "Remove title station: " + title);
+		
+		v.remove(title);
+		
+		Log.d(TAG, "Current number of titles: " + v.size());
+		if (v.size() == 0){
+			Log.d(TAG, "Clean up station from podcast list since this is the last one." );
+			podcasts.remove(stationname);
+			String [] temp = getUrls(stationname);
+			if (temp == null){
+				Log.d(TAG, "Clean up station all together since we have no streams either");
+				removeStation(stationname);
+			}
+		} else {
+			podcasts.put(stationname, v);
+		}		
+		
+		saved = false;
+	}
+	
+	//Remove Station Stream Playlist
+	public void removeStream(String stationname, String url){
+		Log.d(TAG, "removeStream: " + url);
+		
+		Log.d(TAG, "Grab station streams: " + stationname);
+		Vector<String> urls = (Vector<String>) streams.get(stationname);
+		Log.d(TAG, "Current number of titles: " + urls.size());
+		Log.d(TAG, "Remove title station: " + url);
+		
+		urls.remove(url);
+		
+		Log.d(TAG, "Current number of titles: " + urls.size());
+		
+		if (urls.size() == 0){
+			Log.d(TAG, "Clean up station from streams list since this is the last one." );
+			streams.remove(stationname);
+			
+			HashMap<String, String> temp = getRSSUrls(stationname);
+			if (temp == null){
+				Log.d(TAG, "Clean up station all together since we have no podcasts either");
+				removeStation(stationname);
+			}
+		} else {
+			streams.put(stationname, urls);
+		}
+	 
+		saved = false;
+
+	}
 }

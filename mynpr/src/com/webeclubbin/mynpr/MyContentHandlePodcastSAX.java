@@ -29,24 +29,24 @@ public class MyContentHandlePodcastSAX extends DefaultHandler {
 			isItem = true; 
 			count = count + 1;
 		}
-		if (localName.equals(Podcast.TITLE) )  {
+		if (localName.equalsIgnoreCase(Podcast.TITLE) )  {
 			isTitle = true;
 		}
-		if (localName.equals(Podcast.DESCRIPTION) )  {
+		if (localName.equalsIgnoreCase(Podcast.DESCRIPTION) )  {
 			isDescription = true;
 		}
-		if (localName.equals(Podcast.PUBDATE) )  {
+		if (localName.equalsIgnoreCase(Podcast.PUBDATE) )  {
 			isPubDate = true;
 		}
-		if ( localName.equals(Podcast.AUDIOURL)   )  {
+		if ( localName.equalsIgnoreCase(Podcast.AUDIOURL)   )  {
 			String val = atts.getValue("url") ;
 			Log.d(TAG, "val type: " + val);
 			p.setAudioUrl(val);
 		}
-		if (localName.equals(Podcast.STORYLINK) )  {
+		if (localName.equalsIgnoreCase(Podcast.STORYLINK) )  {
 			isStoryLink = true;
 		}
-		if (localName.equals(Podcast.GEOTAG) )  {
+		if (localName.equalsIgnoreCase(Podcast.GEOTAG) )  {
 			isGeoTag = true;
 		}
 
@@ -77,29 +77,29 @@ public class MyContentHandlePodcastSAX extends DefaultHandler {
 	public void endElement(String uri, String localName, 
 		String qName) {
 
-		if (localName.equals("item"))  {
+		if (localName.equalsIgnoreCase("item"))  {
 			isItem = false; 
 			podcasts.add(p);
 			resetVars();
 		}
-		if (localName.equals(Podcast.TITLE) )  {
+		if (localName.equalsIgnoreCase(Podcast.TITLE) )  {
 			isTitle = false;
 			p.setTitle(title);
 		}
-		if (localName.equals(Podcast.DESCRIPTION) )  {
+		if (localName.equalsIgnoreCase(Podcast.DESCRIPTION) )  {
 			isDescription = false;
 			p.setDescription(description);
 		}
-		if (localName.equals(Podcast.PUBDATE) )  {
+		if (localName.equalsIgnoreCase(Podcast.PUBDATE) )  {
 			isPubDate = false;
 			p.setPubDate(pubdate);
 		}
 
-		if (localName.equals(Podcast.STORYLINK) )  {
+		if (localName.equalsIgnoreCase(Podcast.STORYLINK) )  {
 			isStoryLink = false;
 			p.setStoryLink(storylink);
 		}
-		if (localName.equals(Podcast.GEOTAG) )  {
+		if (localName.equalsIgnoreCase(Podcast.GEOTAG) )  {
 			isGeoTag = false;
 			p.setGeoTag(geotag);
 		}

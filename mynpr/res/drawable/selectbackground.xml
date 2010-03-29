@@ -3,8 +3,8 @@
 	
 	<item android:state_pressed="true"
 		android:drawable="@color/darkorange" />   <!-- pressed -->
- 	<!-- <item android:state_selected="true" 
-		android:drawable="@android:color/bright_foreground_dark_inverse" />    selected/highlighted -->
+ 	<item android:state_selected="true" 
+		android:drawable="@color/orange" />  <!--  selected/highlighted -->
 	<!--  Default should be last since Android goes from top down evaluation
 	http://developer.android.com/resources/tutorials/views/hello-formstuff.html
 	 -->
