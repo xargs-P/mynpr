@@ -13,9 +13,10 @@ import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLConnection;
-import java.util.Enumeration;
+import java.util.Calendar;
 import java.util.Vector;
 
+import android.app.NotificationManager;
 import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
@@ -176,7 +177,6 @@ public class StreamingMediaPlayer extends Service {
     	    }   
     	};   
     	Thread t = new Thread(r);
-    	//t.setDaemon(true);
     	t.start(); 
     	
     }
@@ -269,7 +269,6 @@ public class StreamingMediaPlayer extends Service {
     	        }   
     	    };   
     	    Thread t = new Thread(r);
-        	//t.setDaemon(true);
         	t.start(); 
         } else {
         	Log.d(TAG, "Setup incremental stream");
@@ -335,14 +334,16 @@ public class StreamingMediaPlayer extends Service {
         		numread = stream.read(buf);
         	} catch (IOException e){
         		Log.e(TAG, e.toString());
-        		if (stream != null){
+        		Log.d(TAG, "Bad read. Let's quit.");
+        		stop();
+        		/*if (stream != null){
         			Log.d(TAG, "Bad read. Let's try to reconnect to source and continue downloading");
         			urlConn = new URL(mediaUrl).openConnection(); 
         			urlConn.setConnectTimeout(1000 * 30);
         			urlConn.connect();   
         	        stream = urlConn.getInputStream();
         	        numread = stream.read(buf);
-        		}
+        		} */
         	} catch (NullPointerException e) {
         		//Let's get out of here
         		break;
@@ -453,33 +454,28 @@ public class StreamingMediaPlayer extends Service {
 	        				Log.d(TAG, "Current size of mediaplayer list: " + mediaplayers.size() );
 	        				boolean waitingForPlayer = false;
 	        				boolean leave = false;
-	        				while (mediaplayers.size() <= 1 && leave == false){
-    			        		Log.v(TAG, "waiting for another mediaplayer");
-    			        		if (waitingForPlayer == false ){
-    			        			try {
-    			        				Log.v(TAG, "Sleep for a moment");
-    			        				//Spin the spinner
-    			        				
-    			        				sendMessage( PlayListTab.SPIN ) ;
-    			        				//Thread.currentThread().sleep(1000 * 15);
-    			        				Thread.sleep(1000 * 15);
-    			        				//TODO do watch time of day
-    			        				
-    			        				
-    			        				sendMessage( PlayListTab.STOPSPIN );
-    			        				waitingForPlayer = true;
-    			        			} catch (InterruptedException e) {
-    			        				Log.e(TAG, e.toString());
-    			        			}
-    			        		} else {
-    			        			Log.e(TAG, "Timeout occured waiting for another media player");
-    			        			//Toast.makeText(context, "Trouble downloading audio. :-(" , Toast.LENGTH_LONG).show();
+	        				
+		        		    long timeInMilli = Calendar.getInstance().getTime().getTime();
+		        		    long timeToQuit = (1000 * 15) + timeInMilli; //add 15 seconds
+		        		    if (mediaplayers.size() <= 1){
+		        		    	Log.d(TAG, "waiting for another mediaplayer");
+		        		    	waitingForPlayer = true;
+		        		    }
+	        				while (mediaplayers.size() <= 1 && leave == false ){
+	        					
+	        					if ( timeInMilli > timeToQuit ) {
+	        						//time to get out of here
+	        						Log.e(TAG, "Timeout occured waiting for another media player");
     			        			sendMessage( PlayListTab.TROUBLEWITHAUDIO);
     			        			stop();
-    			        			
     			        			leave = true;
-    			        		}
+	        					}
+	        					timeInMilli = Calendar.getInstance().getTime().getTime();
     			        	}
+	        				if (waitingForPlayer == true){
+	        					//we must have been waiting
+	        					sendMessage( PlayListTab.STOPSPIN );
+	        				}
 	        				if (leave == false){
 	        					MediaPlayer mp2 = mediaplayers.get(1);
 	        					mp2.start();
@@ -488,6 +484,8 @@ public class StreamingMediaPlayer extends Service {
 	        					mp.release();
 	        					mediaplayers.remove(mp);
 	        					removefile();
+	        				} else {
+	        					
 	        				}
 	        				
 	        			}
@@ -527,7 +525,6 @@ public class StreamingMediaPlayer extends Service {
  	        }
 	    };
 	    Thread ourthread = new Thread(r);
-	    //ourthread.setDaemon(true);
 	    ourthread.start();
 	    
 	    // Wait indefinitely for the thread to finish
@@ -591,7 +588,6 @@ public class StreamingMediaPlayer extends Service {
         	    	        }   
         	    	    };   
         	    	    Thread t = new Thread(r);
-        	        	//t.setDaemon(true);
         	        	t.start(); 
         			}
         		}
@@ -608,6 +604,13 @@ public class StreamingMediaPlayer extends Service {
     		Log.d(TAG, "Remove Phone listener");
       	  	TelephonyManager tm = (TelephonyManager)getSystemService(TELEPHONY_SERVICE);
       	  	tm.listen(myPhoneListener, PhoneStateListener.LISTEN_NONE);
+      	  	
+      	  	Log.d(TAG, "Turn off Notification");
+      	  	//Get a reference to the NotificationManager
+      	  	NotificationManager nm = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+      	    //Cancel Notification:
+      	  	nm.cancel(MyNPR.PLAYING_ID);
+      	  	
     		stopSelf();
     		
 
