@@ -133,8 +133,8 @@ public class PopStoryTab extends Activity implements Runnable {
         if (savedInstanceState == null){
         	Log.d(TAG, "Bundle savedInstanceState is null.");
         	
-    		//Check to see if we need to even download the web content    		
-        	timeToUpdate();	
+    		//Check to see if we need to even download the web content  
+        	/*timeToUpdate();	
         	
     		MyNPR parent = (MyNPR) getParent(); 
     		Log.d(TAG, "Parent| bundle null? " + parent.isbundlenull() );
@@ -154,7 +154,7 @@ public class PopStoryTab extends Activity implements Runnable {
         	} 
     		
     		thread = new Thread(this);
-    		thread.start();
+    		thread.start(); */
         } else {
         	
         	Log.d(TAG, "Bundle savedInstanceState is NOT null.");
@@ -171,8 +171,7 @@ public class PopStoryTab extends Activity implements Runnable {
         	byte[] b = savedInstanceState.getByteArray(POPSTORYLISTVIEW);
         	popstorydate = savedInstanceState.getString(POPDATE);
         	ih = new ImageHelper(maincontext);
-        	//ih.setImageStorage(savedInstanceState.getStringArray(IMAGES));
-        	
+
         	if ( b != null ) {
         		try {     	    
         	        // Deserialize from a byte array
@@ -191,12 +190,21 @@ public class PopStoryTab extends Activity implements Runnable {
         	    }
         	}
         	
-        	if ( timeToUpdate() ){
+        	/*if ( timeToUpdate() ){
         		Toast.makeText(PopStoryTab.this, "Refreshing Stories...", Toast.LENGTH_LONG).show();
         		button_poprefresh.performClick();
-        	}
+        	} */
         	
         }
+        
+        if ( timeToUpdate() ){
+    		Toast.makeText(PopStoryTab.this, "Refreshing Stories...", Toast.LENGTH_LONG).show();
+    		button_poprefresh.performClick();
+    	} else if (savedInstanceState == null) {
+    		Log.d(TAG, "Update list view for Stories");
+    		thread = new Thread(this);
+    		thread.start();
+    	}
 
     }
     
