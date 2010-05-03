@@ -132,33 +132,11 @@ public class PopStoryTab extends Activity implements Runnable {
         //Setup any saved views
         if (savedInstanceState == null){
         	Log.d(TAG, "Bundle savedInstanceState is null.");
-        	
-    		//Check to see if we need to even download the web content  
-        	/*timeToUpdate();	
-        	
-    		MyNPR parent = (MyNPR) getParent(); 
-    		Log.d(TAG, "Parent| bundle null? " + parent.isbundlenull() );
-        	if ( parent.isbundlenull()  ) {
-        		Log.d(TAG, "Set up Dialog box ");
-        		dialog = new ProgressDialog(this);
-        		dialog.setIndeterminate(true);
-        		dialog.setCancelable(true); 
-        		dialog.setTitle("One Moment...");
-    		
-        		if (updatepopstories == true){	
-        			dialog.setMessage("Grabbing stories from npr.org...");	
-        		}
-        		dialog.show();
-        	} else { 
-        		Log.d(TAG, "Skip setting up Dialog box");
-        	} 
-    		
-    		thread = new Thread(this);
-    		thread.start(); */
+ 
         } else {
         	
         	Log.d(TAG, "Bundle savedInstanceState is NOT null.");
-        	
+         	
         	final Set<String> ourset = savedInstanceState.keySet();
         	String[] s = {"temp"};
         	final String[] ourstrings = ourset.toArray(s);
@@ -188,12 +166,7 @@ public class PopStoryTab extends Activity implements Runnable {
         	    } catch (IOException e) {
         	    	Log.e(TAG, e.toString());
         	    }
-        	}
-        	
-        	/*if ( timeToUpdate() ){
-        		Toast.makeText(PopStoryTab.this, "Refreshing Stories...", Toast.LENGTH_LONG).show();
-        		button_poprefresh.performClick();
-        	} */
+        	}  
         	
         }
         
@@ -204,7 +177,7 @@ public class PopStoryTab extends Activity implements Runnable {
     		Log.d(TAG, "Update list view for Stories");
     		thread = new Thread(this);
     		thread.start();
-    	}
+    	} 
 
     }
     
