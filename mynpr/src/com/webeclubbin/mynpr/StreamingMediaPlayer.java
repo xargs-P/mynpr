@@ -4,12 +4,12 @@ package com.webeclubbin.mynpr;
 //http://blog.pocketjourney.com/2008/04/04/tutorial-custom-media-streaming-for-androids-mediaplayer/
 //Good looking out!
 
+import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLConnection;
@@ -37,32 +37,58 @@ public class StreamingMediaPlayer extends Service {
 	final static public String AUDIO_MPEG =  "audio/mpeg";
 	final static public String BITERATE_HEADER =  "icy-br";
     private int INTIAL_KB_BUFFER ;
-    private int BIT = 8 ;
-    private int SECONDS = 30 ;
+    final private int BIT = 8 ;
+    final private int SECONDS = 30 ;
 
-	private int totalKbRead = 0;
+	
 	
 	private File downloadingMediaFile ; 
-	private String DOWNFILE = "downloadingMediaFile";
+	final private String DOWNFILE = "downloadingMediaFile";
 
+	private int totalKbRead  ;
 	private Context context;
-	private int counter = 0;
-	private int playedcounter = 0;
+	private int counter ;
+	private int playedcounter ;
 	//TODO should convert to Stack object instead of Vector
-	private Vector<MediaPlayer> mediaplayers = new Vector<MediaPlayer>(3);
-	private boolean started = false;
-	private boolean processHasStarted = false; 
-	private boolean regularStream = false;
-	private InputStream stream = null;
-	private URL url = null;
-    private URLConnection urlConn = null;
+	private Vector<MediaPlayer> mediaplayers ;
+	private boolean started ;
+	private boolean processHasStarted ; 
+	private boolean regularStream ;
+
+	private BufferedInputStream stream  ;
+	
+	private URL url  ;
+    private URLConnection urlConn  ;
     
-    private String station = null;
-    private String audiourl = null;
+    private String station ;
+    private String audiourl  ;
     
-    private Intent startingIntent = null;
+    private Intent startingIntent = null ;
     
-    private boolean stopping = false;
+    private boolean stopping ;
+    Thread preparringthread ;
+    
+  //Setup all the variables
+	private  void setupVars(){
+		totalKbRead = 0;
+		counter = 0;
+		playedcounter = 0;
+		//TODO should convert to Stack object instead of Vector
+		mediaplayers = new Vector<MediaPlayer>(3);
+		started = false;
+		processHasStarted = false; 
+		regularStream = false;
+		stream = null;
+		
+		url = null;
+	    urlConn = null;
+	    
+	    station = null;
+	    audiourl = null;
+	    
+	    stopping = false;
+	    preparringthread = null;
+	}
     
     // listen for calls
 	// http://www.androidsoftwaredeveloper.com/2009/04/20/how-to-detect-call-state/ 
@@ -84,6 +110,7 @@ public class StreamingMediaPlayer extends Service {
 			  }
 		  }
 	  };
+	
     
     //This object will allow other processes to interact with our service
     private final IStreamingMediaPlayer.Stub ourBinder = new IStreamingMediaPlayer.Stub(){
@@ -148,6 +175,9 @@ public class StreamingMediaPlayer extends Service {
     	final String TAG = "StreamingMediaPlayer - onStart";
     	Log.d(TAG, "START");
 
+    	Log.d(TAG, "Setup Vars");
+  	    setupVars();
+  	  
     	Log.d(TAG, "Intent: " + intent.getStringExtra(PlayListTab.URL));
     	Log.d(TAG, "Station: " + intent.getStringExtra(PlayListTab.STATION));
     	Log.d(TAG, "RegularStream: " + intent.getBooleanExtra(PlayListTab.REGULARSTREAM, false));
@@ -306,14 +336,21 @@ public class StreamingMediaPlayer extends Service {
     	//cn.setConnectTimeout(1000 * 30);
     	//cn.setReadTimeout(1000 * 15);
         //cn.connect();   
-        stream = urlConn.getInputStream();
+    	int bufsizeForDownload = 8 * 1024;
+    	//int bufsizeForDownload = INTIAL_KB_BUFFER * 1024;
+    	int bufsizeForfile = 64 * 1024;
+        stream = new BufferedInputStream ( urlConn.getInputStream() , bufsizeForDownload );
+        //stream =  urlConn.getInputStream() ;
         if (stream == null) {
         	Log.e(TAG, "Unable to create InputStream for mediaUrl: " + mediaUrl);
+        	sendMessage( PlayListTab.TROUBLEWITHAUDIO);
+        	stop();
         }
         
 		Log.d(TAG, "File name: " + downloadingMediaFile);
-		BufferedOutputStream bout = new BufferedOutputStream ( new FileOutputStream(downloadingMediaFile), 32 * 1024 );   
-        byte buf[] = new byte[16 * 1024];
+		BufferedOutputStream bout = new BufferedOutputStream ( new FileOutputStream(downloadingMediaFile), bufsizeForfile );   
+		
+        byte buf[] = new byte[bufsizeForDownload];
         int totalBytesRead = 0, incrementalBytesRead = 0, numread = 0;
 
         if (stopping == true){
@@ -326,7 +363,7 @@ public class StreamingMediaPlayer extends Service {
         		Log.d(TAG, "FileOutputStream is null, Create new one: " + DOWNFILE + counter);
         		downloadingMediaFile = new File(context.getCacheDir(),DOWNFILE + counter);
         		downloadingMediaFile.deleteOnExit();
-        		bout = new BufferedOutputStream ( new FileOutputStream(downloadingMediaFile) );	
+        		bout = new BufferedOutputStream ( new FileOutputStream(downloadingMediaFile) , bufsizeForfile );	
         	}
 
         	try {
@@ -335,6 +372,7 @@ public class StreamingMediaPlayer extends Service {
         	} catch (IOException e){
         		Log.e(TAG, e.toString());
         		Log.d(TAG, "Bad read. Let's quit.");
+        		sendMessage( PlayListTab.TROUBLEWITHAUDIO);
         		stop();
         		/*if (stream != null){
         			Log.d(TAG, "Bad read. Let's try to reconnect to source and continue downloading");
@@ -361,7 +399,7 @@ public class StreamingMediaPlayer extends Service {
             	totalKbRead = totalBytesRead/1000;
             }
             
-            if ( totalKbRead >= INTIAL_KB_BUFFER ) {
+            if ( totalKbRead >= INTIAL_KB_BUFFER  && stopping != true) {
             	sendMessage( PlayListTab.CHECKRIORITY );
             	Log.v(TAG, "Reached Buffer amount we want: " + "totalKbRead: " + totalKbRead + " INTIAL_KB_BUFFER: " + INTIAL_KB_BUFFER);
             	bout.flush();
@@ -375,7 +413,7 @@ public class StreamingMediaPlayer extends Service {
             }
             
         } while (stream != null);   
-
+        Log.d(TAG, "Done with streaming");
 
     }  
 
@@ -387,10 +425,12 @@ public class StreamingMediaPlayer extends Service {
 	        public void run() {   
 	        	MediaPlayer m = new MediaPlayer();
 	        	MediaPlayer.OnBufferingUpdateListener onBuff = new MediaPlayer.OnBufferingUpdateListener(){
+	        		boolean messagesent = false;
 	        		public void onBufferingUpdate (MediaPlayer mp, int percent){
 	        			Log.d(TAG," Precent Buffered: " + percent);
-	        			if ( percent > 8 && percent < 11 ){
+	        			if ( percent > 8 && messagesent == false ){
 	        				sendMessage( PlayListTab.STOPSPIN );
+	        				messagesent = true;
 	        			}
 	        		}
 	        	};
@@ -441,6 +481,7 @@ public class StreamingMediaPlayer extends Service {
     	final File f = partofaudio;
     	final String TAG = "setupplayer";
     	Log.d(TAG, "File " + f.getAbsolutePath());
+    	
 	    Runnable r = new Runnable() {
 	        public void run() {
 	        	
@@ -455,9 +496,14 @@ public class StreamingMediaPlayer extends Service {
 	        				boolean waitingForPlayer = false;
 	        				boolean leave = false;
 	        				
+	        				if (stopping){
+	        					//we should get out of here since it is time to leave
+	        					leave = true;
+	        				}
+	        				
 		        		    long timeInMilli = Calendar.getInstance().getTime().getTime();
 		        		    long timeToQuit = (1000 * 15) + timeInMilli; //add 15 seconds
-		        		    if (mediaplayers.size() <= 1){
+		        		    if (mediaplayers.size() <= 1 && stopping == false){
 		        		    	Log.d(TAG, "waiting for another mediaplayer");
 		        		    	waitingForPlayer = true;
 		        		    }
@@ -499,8 +545,17 @@ public class StreamingMediaPlayer extends Service {
 	        		mp.setOnCompletionListener(listener);
 	        		Log.d(TAG, "Prepare Media Player " + f);
 	        		
+	        		if (stopping){
+	        			//The process is stopping. Let's get out of here
+	        			return;
+	        		}
+	        		
 	        		mediaplayers.add(mp);
 	        		
+	        		if (stopping){
+	        			//The process is stopping. Let's get out of here
+	        			return;
+	        		}
 	        		if ( ! started  ){
 	        			mp.prepare();
 	        		} else {
@@ -524,14 +579,15 @@ public class StreamingMediaPlayer extends Service {
 	        	
  	        }
 	    };
-	    Thread ourthread = new Thread(r);
-	    ourthread.start();
+
+	    preparringthread = new Thread(r);
+	    preparringthread.start();
 	    
 	    // Wait indefinitely for the thread to finish
 	    if ( ! started  ){
 	    	try {
 	    		Log.d(TAG, "Start and wait for first audio clip to be prepared.");
-	    		ourthread.join();
+	    		preparringthread.join();
 	    		// Finished
 	    	} catch (InterruptedException e) {
 	    		// Thread was interrupted
@@ -566,14 +622,14 @@ public class StreamingMediaPlayer extends Service {
     
     //Stop Audio
     public void stop(){
-    	String TAG = "STOP";
+    	final String TAG = "STOP";
     	Log.d(TAG,"Entry");
     	
     	stopping = true;
+    	
     	if (regularStream == true){
     		sendMessage(PlayListTab.RESETPLAYSTATUS);
-    	} 
-    	//regularStream = false;
+    	}
     	
     	try {
     		
@@ -592,12 +648,26 @@ public class StreamingMediaPlayer extends Service {
         			}
         		}
     		}
+    		Runnable r = new Runnable() {   
+    	        public void run() {   
+    	        	if (stream != null){
+    	    			Log.d(TAG,"Close stream");
+    	    			try {
+							stream.close();
+							Log.d(TAG,"Done Closing stream");
+						} catch (IOException e) {
+							Log.e(TAG, "error closing open connection");
+				    		sendMessage(PlayListTab.STOP);
+						}
+    	    		}
+    	    		stream = null;
+    	        }   
+    	    };   
+    	    stream = null;
+    	    //closing the stream may take a few seconds, we will run this in a thread.
+    	    //Thread t = new Thread(r);
+        	//t.start(); 
     		
-    		if (stream != null){
-    			Log.d(TAG,"Close stream");
-    			stream.close();
-    		}
-    		stream = null;
     		
 
     		//Take off listener
@@ -611,16 +681,21 @@ public class StreamingMediaPlayer extends Service {
       	    //Cancel Notification:
       	  	nm.cancel(MyNPR.PLAYING_ID);
       	  	
+      	  	processHasStarted = false;
+      	  	if ( preparringthread != null) {
+      	  		preparringthread.interrupt();
+      	  	}
+      	  	
     		stopSelf();
     		
 
     	} catch (ArrayIndexOutOfBoundsException e) {
     		Log.e(TAG, "No items in Media player List");
     		sendMessage(PlayListTab.STOP);
-    	} catch (IOException e) {
+    	} /*catch (IOException e) {
     		Log.e(TAG, "error closing open connection");
-    		sendMessage(PlayListTab.STOP);
-    	}
+    		sendMessage(PlayListTab.STOP);  
+    	} */
     }
 
     //Is the streamer playing audio?
