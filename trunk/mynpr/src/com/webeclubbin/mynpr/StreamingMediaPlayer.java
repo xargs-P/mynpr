@@ -8,6 +8,7 @@ import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.HttpURLConnection;
@@ -38,7 +39,7 @@ public class StreamingMediaPlayer extends Service {
 	final static public String BITERATE_HEADER =  "icy-br";
     private int INTIAL_KB_BUFFER ;
     final private int BIT = 8 ;
-    final private int SECONDS = 30 ;
+    final private int SECONDS = 30 ; 
 
 	
 	
@@ -68,6 +69,8 @@ public class StreamingMediaPlayer extends Service {
     private boolean stopping ;
     Thread preparringthread ;
     
+    boolean waitingForPlayer;
+    
   //Setup all the variables
 	private  void setupVars(){
 		totalKbRead = 0;
@@ -88,6 +91,8 @@ public class StreamingMediaPlayer extends Service {
 	    
 	    stopping = false;
 	    preparringthread = null;
+	    
+	    waitingForPlayer = false;
 	}
     
     // listen for calls
@@ -387,9 +392,14 @@ public class StreamingMediaPlayer extends Service {
         		break;
         	}
         	
-            if (numread <= 0) {  
+            if (numread < 0) {  
+            	//We got something weird. Let's get out of here.
+            	Log.e(TAG, "Bad read from stream. We got some number less than 0: " + numread + " Let's quit" );
+            	stop();
                 break;   
             	
+            } else if ( numread == 0 ) {
+            	//Let us do nothing.
             } else {
             	//Log.v(TAG, "write to file");
             	bout.write(buf, 0, numread);
@@ -493,7 +503,7 @@ public class StreamingMediaPlayer extends Service {
 	        				String TAG = "MediaPlayer.OnCompletionListener - Partial download";
 	        				Log.d(TAG, "Start");
 	        				Log.d(TAG, "Current size of mediaplayer list: " + mediaplayers.size() );
-	        				boolean waitingForPlayer = false;
+	        				waitingForPlayer = false;
 	        				boolean leave = false;
 	        				
 	        				if (stopping){
@@ -502,10 +512,11 @@ public class StreamingMediaPlayer extends Service {
 	        				}
 	        				
 		        		    long timeInMilli = Calendar.getInstance().getTime().getTime();
-		        		    long timeToQuit = (1000 * 15) + timeInMilli; //add 15 seconds
+		        		    long timeToQuit = (1000 * 30) + timeInMilli; //add 30 seconds
 		        		    if (mediaplayers.size() <= 1 && stopping == false){
 		        		    	Log.d(TAG, "waiting for another mediaplayer");
 		        		    	waitingForPlayer = true;
+		        		    	sendMessage( PlayListTab.SPIN);
 		        		    }
 	        				while (mediaplayers.size() <= 1 && leave == false ){
 	        					
@@ -521,11 +532,12 @@ public class StreamingMediaPlayer extends Service {
 	        				if (waitingForPlayer == true){
 	        					//we must have been waiting
 	        					sendMessage( PlayListTab.STOPSPIN );
+	        					waitingForPlayer = false;
 	        				}
 	        				if (leave == false){
 	        					MediaPlayer mp2 = mediaplayers.get(1);
 	        					mp2.start();
-	        					Log.d(TAG, "Start another player");
+	        					Log.d(TAG, "Start another player.");
     			        	
 	        					mp.release();
 	        					mediaplayers.remove(mp);
@@ -543,30 +555,37 @@ public class StreamingMediaPlayer extends Service {
 	        		
 	        		Log.d(TAG, "Setup player completion listener");
 	        		mp.setOnCompletionListener(listener);
-	        		Log.d(TAG, "Prepare Media Player " + f);
 	        		
 	        		if (stopping){
 	        			//The process is stopping. Let's get out of here
 	        			return;
+	        		}
+	        		
+	        		if (stopping){
+	        			//The process is stopping. Let's get out of here
+	        			return;
+	        		}
+	        		
+	        		Log.d(TAG, "Prepare Media Player " + f);
+	        		if ( started == false || waitingForPlayer == true  ){
+	        			Log.d(TAG, "Prepare synchronously.");
+	        			mp.prepare();
+	        		} else {
+	        			//This will save us a few more seconds
+	        			Log.d(TAG, "Prepare Asynchronously.");
+	        			mp.prepareAsync();
 	        		}
 	        		
 	        		mediaplayers.add(mp);
 	        		
-	        		if (stopping){
-	        			//The process is stopping. Let's get out of here
-	        			return;
-	        		}
-	        		if ( ! started  ){
-	        			mp.prepare();
-	        		} else {
-	        			//This will save us a few more seconds
-	        			mp.prepareAsync();
-	        		}
-	        		
-	        		if ( ! started  ){
+	        		if ( started == false ){
 		        		Log.d(TAG, "Start Media Player " + f);
 		        		startMediaPlayer();
 		        	}
+	        		
+	        	} catch ( FileNotFoundException e ) {
+	        		Log.e(TAG, e.toString());
+	        		Log.e(TAG, "Can't find file. Android must have deleted it on a clean up :-(" );
 	        	} catch  (IllegalStateException	e) {
 	        		Log.e(TAG, e.toString());
 	        		sendMessage( PlayListTab.TROUBLEWITHAUDIO);
@@ -576,6 +595,7 @@ public class StreamingMediaPlayer extends Service {
 	        		sendMessage( PlayListTab.TROUBLEWITHAUDIO);
 	        		stop();
 	        	}
+
 	        	
  	        }
 	    };

@@ -620,7 +620,7 @@ public class PlayListTab extends Activity implements Runnable, ServiceConnection
     	//final String TAG = "showHelp";
     	AlertDialog.Builder builder = new AlertDialog.Builder(this);
 		
-		builder.setMessage("Select Radio Station Live Streams or Podcast.\n" + "Long press an item to delete.\n" + "Or just press the 'Clear Playlist' Button" )
+		builder.setMessage("Select Radio Station Live Streams or Podcast.\n" + "Long press an item to delete.\n" + "Or just press the 'Clear Playlist' Button to clear it all." )
 		       .setCancelable(true)
 		       .setPositiveButton("Okay", new DialogInterface.OnClickListener() {
 		           public void onClick(DialogInterface dialog, int id) {
