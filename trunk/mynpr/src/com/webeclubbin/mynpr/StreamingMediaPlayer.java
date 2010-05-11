@@ -341,8 +341,8 @@ public class StreamingMediaPlayer extends Service {
     	//cn.setConnectTimeout(1000 * 30);
     	//cn.setReadTimeout(1000 * 15);
         //cn.connect();   
-    	int bufsizeForDownload = 8 * 1024;
-    	//int bufsizeForDownload = INTIAL_KB_BUFFER * 1024;
+    	//int bufsizeForDownload = 8 * 1024;
+    	int bufsizeForDownload =   1024;
     	int bufsizeForfile = 64 * 1024;
         stream = new BufferedInputStream ( urlConn.getInputStream() , bufsizeForDownload );
         //stream =  urlConn.getInputStream() ;
@@ -395,12 +395,11 @@ public class StreamingMediaPlayer extends Service {
             if (numread < 0) {  
             	//We got something weird. Let's get out of here.
             	Log.e(TAG, "Bad read from stream. We got some number less than 0: " + numread + " Let's quit" );
+            	sendMessage( PlayListTab.TROUBLEWITHAUDIO);
             	stop();
                 break;   
             	
-            } else if ( numread == 0 ) {
-            	//Let us do nothing.
-            } else {
+            } else if ( numread >= 1 ) {
             	//Log.v(TAG, "write to file");
             	bout.write(buf, 0, numread);
 
