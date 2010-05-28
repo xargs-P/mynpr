@@ -4,12 +4,12 @@ package com.webeclubbin.mynpr;
 
 import android.app.Activity;
 import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.drawable.BitmapDrawable;
 import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
-import android.widget.TextView;
 
 public class PopStoriesAdapter extends ArrayAdapter<String> {
 
@@ -17,9 +17,11 @@ public class PopStoriesAdapter extends ArrayAdapter<String> {
 	String[] title, image = null;
 	int ourlayoutview;
 	ImageHelper im = new ImageHelper(context);
+	Bitmap defaultimage = null;
 	String TAG = "PopStoriesAdapter";
+	
 	  
-	PopStoriesAdapter(Activity context, int ourview, String[] t, String[] i, ImageHelper imagehelper) {
+	PopStoriesAdapter(Activity context, int ourview, String[] t, String[] i) {
 		super(context, ourview, t); 
 		
 		Log.d(TAG,"Creation");
@@ -30,13 +32,9 @@ public class PopStoriesAdapter extends ArrayAdapter<String> {
         
         Log.d(TAG,"Number of rows: " + t.length);
         
-        if (imagehelper != null){
-        	Log.d(TAG,"Store imagehelper we received");
-        	this.im = imagehelper;
-        } else {
-        	im = new ImageHelper(context);
-        }
+        im = new ImageHelper(context);
         
+        defaultimage = BitmapFactory.decodeResource(context.getResources(),  com.webeclubbin.mynpr.R.drawable.processing2light );
         Runnable r = new Runnable() {   
 	        public void run() {   
 	        	im.setImageStorage(image);
@@ -55,8 +53,8 @@ public class PopStoriesAdapter extends ArrayAdapter<String> {
 			convertView=View.inflate(context, ourlayoutview, null);  
 			
 			holder = new ViewHolder();
-			holder.label = (TextView)convertView.findViewById(com.webeclubbin.mynpr.R.id.popstoryrowlabel); 
-
+			holder.label = (LazyTextView)convertView.findViewById(com.webeclubbin.mynpr.R.id.popstoryrowlabel); 
+			
 			convertView.setTag(holder);
 		} else {
 			Log.d(TAG, "Use old view object");
@@ -68,9 +66,19 @@ public class PopStoriesAdapter extends ArrayAdapter<String> {
         if ( (image[position] != null) &&  ( ! image[position].equals(" ") ) && ( ! image[position].equals("") ) ) {  
             
             Log.d(TAG, "image " + Integer.toString(position) + " " + image[position] );
-            Bitmap b = im.getImageBitmap( image[position] );
+            //Bitmap b = im.getImageBitmap( image[position] );
             
-            holder.label.setCompoundDrawablesWithIntrinsicBounds(null, new BitmapDrawable (b), null, null);
+            if ( im.isAvailable(image[position]) ) {
+            	Log.d(TAG, "Set image");
+            	holder.label.setImageUrl( image[position] );
+            } else {
+            	Log.d(TAG, "Set default then get image");
+            	//set default
+            	holder.label.setCompoundDrawablesWithIntrinsicBounds(null, new BitmapDrawable ( defaultimage ), null, null);
+                //Next download image
+                holder.label.setImageUrl( image[position] );
+            }
+            
         }  else {
         	holder.label.setCompoundDrawablesWithIntrinsicBounds(null, null, null, null);
         }
@@ -80,6 +88,6 @@ public class PopStoriesAdapter extends ArrayAdapter<String> {
 	
 	//Helper class to speed up getView()
 	static class ViewHolder {
-        TextView label;
+        LazyTextView label;
     }
 }

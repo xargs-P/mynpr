@@ -55,7 +55,7 @@ public class PopStoryTab extends Activity implements Runnable {
 	private Activity maincontext = null;
 	private String popstorydate = null;
 	private boolean updatepopstories = true;
-	private ImageHelper ih = null;
+	//private ImageHelper ih = null;
 
 	private final String POPSTORYLISTVIEW = "POPSTORYLISTVIEW";
 	private final String POPDATE = "POPDATE";
@@ -148,7 +148,7 @@ public class PopStoryTab extends Activity implements Runnable {
         	}
         	byte[] b = savedInstanceState.getByteArray(POPSTORYLISTVIEW);
         	popstorydate = savedInstanceState.getString(POPDATE);
-        	ih = new ImageHelper(maincontext);
+        	//ih = new ImageHelper(maincontext);
 
         	if ( b != null ) {
         		try {     	    
@@ -286,7 +286,7 @@ public class PopStoryTab extends Activity implements Runnable {
 
 				lv.setAdapter( new PopStoriesAdapter(maincontext,
 						com.webeclubbin.mynpr.R.layout.popstoryrow, 
-						title, image, ih) );
+						title, image) );
 			} else {
 				if (title == null){
 					Log.d(TAG, "Null Titles");
@@ -422,10 +422,10 @@ public class PopStoryTab extends Activity implements Runnable {
         Log.d(TAG, "Saving Update Time");
         instanceState.putString(POPDATE, popstorydate);
 
-        if (ih != null){
+        /*if (ih != null){
             Log.d(TAG, "Saving Image Urls");
         	instanceState.putStringArray(IMAGES, ih.getUrls() );
-        }
+        } */
 
     	super.onSaveInstanceState(instanceState);
     }
