@@ -23,6 +23,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
+import android.os.Debug;
 import android.os.IBinder;
 import android.os.Process;
 import android.telephony.PhoneStateListener;
@@ -337,6 +338,8 @@ public class StreamingMediaPlayer extends Service {
     public void downloadAudioIncrement(String mediaUrl) throws IOException {
     	final String TAG = "downloadAudioIncrement";
 
+    	// start tracing to "/sdcard/mynpr.trace"
+    	Debug.startMethodTracing("mynpr");
     	//URLConnection cn = new URL(mediaUrl).openConnection(); 
     	//cn.setConnectTimeout(1000 * 30);
     	//cn.setReadTimeout(1000 * 15);
@@ -423,6 +426,8 @@ public class StreamingMediaPlayer extends Service {
             
         } while (stream != null);   
         Log.d(TAG, "Done with streaming");
+        // stop tracing
+        Debug.stopMethodTracing();
 
     }  
 
