@@ -53,6 +53,9 @@ public class LazyTextView extends TextView {
 	private void refreshimage() {
         if (theimage != null) {
         	setCompoundDrawablesWithIntrinsicBounds(null, new BitmapDrawable (  theimage ), null, null);
+        } else {
+        	//get rid of default image
+        	setCompoundDrawablesWithIntrinsicBounds(null, null , null, null);
         }
     }
 	
