@@ -17,6 +17,7 @@ import java.net.URLConnection;
 import java.util.Calendar;
 import java.util.Vector;
 
+import android.app.Activity;
 import android.app.NotificationManager;
 import android.app.Service;
 import android.content.Context;
@@ -71,6 +72,8 @@ public class StreamingMediaPlayer extends Service {
     Thread preparringthread ;
     
     boolean waitingForPlayer;
+    
+    LogtoFile ltf = null;
     
   //Setup all the variables
 	private  void setupVars(){
@@ -164,6 +167,8 @@ public class StreamingMediaPlayer extends Service {
     @Override 
     public void onCreate() {
     	  super.onCreate();
+    	  context = this;
+    	  ltf = new LogtoFile (context);
     	  
     	  String TAG = "StreamingMediaPlayer - onCreate";
     	  Log.d(TAG, "START");
@@ -179,6 +184,9 @@ public class StreamingMediaPlayer extends Service {
     	super.onStart(intent, startId);
     	
     	final String TAG = "StreamingMediaPlayer - onStart";
+    	//context = this;
+    	
+    	
     	Log.d(TAG, "START");
 
     	Log.d(TAG, "Setup Vars");
@@ -199,7 +207,7 @@ public class StreamingMediaPlayer extends Service {
     	
     	Log.d(TAG,"Run startStreaming function");
     
-    	context = this;
+    	
      	downloadingMediaFile = new File(context.getCacheDir(),DOWNFILE + counter);
      	downloadingMediaFile.deleteOnExit();
 

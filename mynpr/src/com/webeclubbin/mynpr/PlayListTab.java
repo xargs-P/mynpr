@@ -17,7 +17,6 @@ import android.content.ServiceConnection;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
-import android.os.Message;
 import android.os.RemoteException;
 import android.util.Log;
 import android.view.Menu;
@@ -25,12 +24,10 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.view.animation.Animation;
-import android.view.animation.AnimationUtils;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.TextView;
-import android.widget.Toast;
 
 public class PlayListTab extends Activity implements Runnable, ServiceConnection {
 	private ListView lv = null;
@@ -389,6 +386,13 @@ public class PlayListTab extends Activity implements Runnable, ServiceConnection
         		//Trouble with Audio downloading
         		Log.d(TAG, "Send screen message about trouble with audio");
         		Toast.makeText(maincontext, "Could not connect with Audio Stream" , Toast.LENGTH_LONG).show();
+        		stopplayer() ;
+
+        		Intent i = new Intent(Intent.ACTION_SEND ); 
+            	i.setType("text/plain");
+            	i.putExtra(Intent.EXTRA_TEXT,   );
+            	i.putExtra(Intent.EXTRA_SUBJECT, "myNPR Error");
+                startActivity(Intent.createChooser(i, "Send Error Log..."));
         		
         		stopplayer() ;
         	} else if (msg.what == PlayListTab.TROUBLEWITHRSSFEED){
