@@ -13,6 +13,7 @@ import android.graphics.drawable.BitmapDrawable;
 import android.os.Handler;
 import android.os.Message;
 import android.util.AttributeSet;
+import android.util.Log;
 import android.widget.TextView;
 
 public class LazyTextView extends TextView {
@@ -40,6 +41,7 @@ public class LazyTextView extends TextView {
 		weblocation = url;
 
 		//Start up thread to go get image
+		Log.d("LazyTextView", "setImageUrl: " + getText() );
 		new Thread() {
 			@Override
 			public void run() {

@@ -1,5 +1,6 @@
 package com.webeclubbin.mynpr;
 
+import java.io.File;
 import java.util.Set;
 
 import android.app.Activity;
@@ -14,9 +15,11 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.ServiceConnection;
+import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
+import android.os.Message;
 import android.os.RemoteException;
 import android.util.Log;
 import android.view.Menu;
@@ -24,10 +27,12 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.view.animation.Animation;
+import android.view.animation.AnimationUtils;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 public class PlayListTab extends Activity implements Runnable, ServiceConnection {
 	private ListView lv = null;
@@ -390,7 +395,7 @@ public class PlayListTab extends Activity implements Runnable, ServiceConnection
 
         		Intent i = new Intent(Intent.ACTION_SEND ); 
             	i.setType("text/plain");
-            	i.putExtra(Intent.EXTRA_TEXT,   );
+            	i.putExtra(Intent.EXTRA_STREAM,  new File(maincontext.getCacheDir(), "log.txt").toURI() );
             	i.putExtra(Intent.EXTRA_SUBJECT, "myNPR Error");
                 startActivity(Intent.createChooser(i, "Send Error Log..."));
         		

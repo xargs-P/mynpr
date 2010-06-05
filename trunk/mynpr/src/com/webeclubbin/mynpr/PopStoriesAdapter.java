@@ -46,7 +46,7 @@ public class PopStoriesAdapter extends ArrayAdapter<String> {
 	@Override
     public View getView(int position, View convertView, ViewGroup parent) {  
          
-    	Log.d(TAG,"getView");
+    	Log.d(TAG,"getView position: " + position);
     	ViewHolder holder;
     	
 		if (convertView == null) {
@@ -66,6 +66,7 @@ public class PopStoriesAdapter extends ArrayAdapter<String> {
         if ( (image[position] != null) &&  ( ! image[position].equals(" ") ) && ( ! image[position].equals("") ) ) {  
             
             Log.d(TAG, "image " + Integer.toString(position) + " " + image[position] );
+            Log.d(TAG, "Title " + holder.label.getText() );
             //Bitmap b = im.getImageBitmap( image[position] );
             
             if ( im.isAvailable(image[position]) ) {
